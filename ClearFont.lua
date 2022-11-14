@@ -47,20 +47,21 @@ end
 -- =============================================================================
 --  B. WOW用户介面设计
 -- =============================================================================
---	这是**修改字体大小/特效**最重要的部分
---	主要的字体被最先列出，其馀部分字体按照字母表顺序排列
---	以下列出只包括 ClearFont 修改了的范例部分，并不是所有方面都会显示出来（范例：阴影）
---	参考文档：https://wowpedia.fandom.com/wiki/API_FontInstance_SetFont
+--   这是**修改字体大小/特效**最重要的部分
+--   主要的字体被最先列出，其馀部分字体按照字母表顺序排列
+--   以下列出只包括 ClearFont 修改了的范例部分，并不是所有方面都会显示出来（范例：阴影）
 -- -----------------------------------------------------------------------------
---  对于以下可用代码的解释，目前10.0中SetFont的Flag入参支持 "OUTLINE"、"MONOCHROME"、"OUTLINE, THICK"等字符。
---	不带描边：	Obj:SetFont(FONTFILE, SCALE, "")
---	普通描边：	Obj:SetFont(FONTFILE, SCALE, "")
---	细描边：	Obj:SetFont(FONTFILE, SCALE, "")
---	粗描边：	Obj:SetFont(FONTFILE, SCALE, "")
---	设置颜色：	Font:SetTextColor(r, g, b)
---	阴影颜色：	Font:SetShadowColor(r, g, b)
---	阴影位置:	Font:SetShadowOffset(x, y)
---	透明度:		Font:SetAlpha(x)，仅接受0-1范围内
+--  对于以下可用代码的解释
+--   不带描边:		Font:SetFont(SOMETHING_TEXT_FONT, x * scale)
+--   普通描边:		Font:SetFont(SOMETHING_TEXT_FONT, x * scale, "OUTLINE")
+--   粗描边:		Font:SetFont(SOMETHING_TEXT_FONT, x * scale, "THICKOUTLINE")
+--   字体颜色:		Font:SetTextColor(r, g, b)
+--   阴影颜色:		Font:SetShadowColor(r, g, b)
+--   阴影位置:		Font:SetShadowOffset(x, y)
+--   透明度:		Font:SetAlpha(x)
+--
+--  范例：			SetFont(CLEAR_FONT, 13 * CF_SCALE)
+--   在括弧里的第一部分是(A.)中申明过的字体代号，第二部分是字体大小
 -- =============================================================================
 
 
@@ -261,7 +262,7 @@ function ClearFont:ApplySystemFonts()
 	if (CanSetFont(GameFontRedSmall)) then GameFontRedSmall:SetFont(CLEAR_FONT, 12 * CF_SCALE, ""); end
 
 	-- 超小字体
-	if (CanSetFont(GameFontHighlightExtraSmall)) then GameFontHighlightExtraSmall:SetFont(CLEAR_FONT, 11 * CF_SCALE, "");	end -- 预设值：15
+	if (CanSetFont(GameFontHighlightExtraSmall)) then GameFontHighlightExtraSmall:SetFont(CLEAR_FONT, 11 * CF_SCALE, ""); end -- 预设值：15
 
 
 	-- -----------------------------------------------------------------------------
@@ -304,8 +305,8 @@ function ClearFont:ApplySystemFonts()
 	if (CanSetFont(NumberFontNormalYellow)) then NumberFontNormalYellow:SetFont(CLEAR_FONT_NUMBER, 12 * CF_SCALE, ""); end
 
 	-- 动作条的按键绑定
-	if (CanSetFont(NumberFontNormalSmall)) then NumberFontNormalSmall:SetFont(CLEAR_FONT_NUMBER, 11 * CF_SCALE, ""); end -- 预设值：11
-	if (CanSetFont(NumberFontNormalSmallGray)) then NumberFontNormalSmallGray:SetFont(CLEAR_FONT_NUMBER, 11 * CF_SCALE, ""); end
+	if (CanSetFont(NumberFontNormalSmall)) then NumberFontNormalSmall:SetFont(CLEAR_FONT_NUMBER, 11 * CF_SCALE, "OUTLINE"); end -- 预设值：11
+	if (CanSetFont(NumberFontNormalSmallGray)) then NumberFontNormalSmallGray:SetFont(CLEAR_FONT_NUMBER, 11 * CF_SCALE, "OUTLINE"); end
 
 	-- （未确认）
 	if (CanSetFont(NumberFontNormalLarge)) then NumberFontNormalLarge:SetFont(CLEAR_FONT_NUMBER, 14 * CF_SCALE, ""); end -- 预设值：14
