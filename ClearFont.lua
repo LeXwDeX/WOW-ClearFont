@@ -54,13 +54,13 @@ end
 --  对于以下可用代码的解释
 --   不带描边:		Font:SetFont(SOMETHING_TEXT_FONT, x * scale)
 --   普通描边:		Font:SetFont(SOMETHING_TEXT_FONT, x * scale, "OUTLINE")
---   粗描边:		Font:SetFont(SOMETHING_TEXT_FONT, x * scale, "THICKOUTLINE")
+--   粗描边:		Font:SetFont(SOMETHING_TEXT_FONT, x * scale, "THICK,OUTLINE")
 --   字体颜色:		Font:SetTextColor(r, g, b)
 --   阴影颜色:		Font:SetShadowColor(r, g, b)
 --   阴影位置:		Font:SetShadowOffset(x, y)
 --   透明度:		Font:SetAlpha(x)
 --
---  范例：			SetFont(CLEAR_FONT, 13 * CF_SCALE)
+--  范例：			SetFont(CLEAR_FONT, 13 * CF_SCALE,"")
 --   在括弧里的第一部分是(A.)中申明过的字体代号，第二部分是字体大小
 -- =============================================================================
 
@@ -242,12 +242,13 @@ function ClearFont:ApplySystemFonts()
 
 	-- 头像框架名字，BUFF时间，未选择的面板标籤，面板中大部分描述字体，天赋点的数位，头衔奖励（成就面板），查询、公会成员角色名字（社交面板），
 	-- 竞技场站队详细、站队等级（PvP面板），日曆活动条目
-	if (CanSetFont(GameFontNormalSmall)) then GameFontNormalSmall:SetFont(CLEAR_FONT, 13 * CF_SCALE, ""); end -- 预设值：15
+	if (CanSetFont(GameFontNormalSmall)) then GameFontNormalSmall:SetFont(CLEAR_FONT, 12 * CF_SCALE, ""); end -- 预设值：15
 
 	-- 高亮字体，下拉功能表选项，已选择的面板标籤，角色属性、技能的数位、声望条目（角色资讯面板），天赋点数（天赋面板），角色等级、职业等资讯、公会资讯（社交面板），
 	-- 详细荣誉点、竞技场比分（PvP面板），时间资讯，系统功能表子专案
-	if (CanSetFont(GameFontHighlightSmall)) then GameFontHighlightSmall:SetFont(CLEAR_FONT, 12 * CF_SCALE, ""); end -- 预设值：15
-	if (CanSetFont(GameFontHighlightSmallOutline)) then GameFontHighlightSmallOutline:SetFont(CLEAR_FONT, 12 * CF_SCALE, ""); end
+	if (CanSetFont(GameFontHighlightSmall)) then GameFontHighlightSmall:SetFont(CLEAR_FONT, 13 * CF_SCALE, "THICK，OUTLINE"); end -- 预设值：15
+	-- 技能条上的宏字体
+	if (CanSetFont(GameFontHighlightSmallOutline)) then GameFontHighlightSmallOutline:SetFont(CLEAR_FONT, 12 * CF_SCALE, "THICK, OUTLINE"); end
 
 	-- PvP面板描述，团队面板按钮等
 	if (CanSetFont(GameFontDisableSmall)) then GameFontDisableSmall:SetFont(CLEAR_FONT, 12 * CF_SCALE, ""); end -- 预设值：15
@@ -270,7 +271,7 @@ function ClearFont:ApplySystemFonts()
 	-- -----------------------------------------------------------------------------
 
 	-- 时钟，码錶
-	if (CanSetFont(GameFontNormalLarge)) then GameFontNormalLarge:SetFont(CLEAR_FONT, 13 * CF_SCALE, ""); end -- 预设值：17
+	if (CanSetFont(GameFontNormalLarge)) then GameFontNormalLarge:SetFont(CLEAR_FONT, 15 * CF_SCALE, ""); end -- 预设值：17
 	if (CanSetFont(GameFontHighlightLarge)) then GameFontHighlightLarge:SetFont(CLEAR_FONT, 13 * CF_SCALE, ""); end
 
 	-- 竞技场面板
@@ -305,8 +306,9 @@ function ClearFont:ApplySystemFonts()
 	if (CanSetFont(NumberFontNormalYellow)) then NumberFontNormalYellow:SetFont(CLEAR_FONT_NUMBER, 12 * CF_SCALE, ""); end
 
 	-- 动作条的按键绑定
-	if (CanSetFont(NumberFontNormalSmall)) then NumberFontNormalSmall:SetFont(CLEAR_FONT_NUMBER, 11 * CF_SCALE, "OUTLINE"); end -- 预设值：11
-	if (CanSetFont(NumberFontNormalSmallGray)) then NumberFontNormalSmallGray:SetFont(CLEAR_FONT_NUMBER, 11 * CF_SCALE, "OUTLINE"); end
+	if (CanSetFont(NumberFontNormalSmall)) then NumberFontNormalSmall:SetFont(CLEAR_FONT_NUMBER, 14 * CF_SCALE, "OUTLINE"); end -- 预设值：11
+	if (CanSetFont(NumberFontNormalSmallGray)) then NumberFontNormalSmallGray:SetFont(CLEAR_FONT_NUMBER, 14 * CF_SCALE, "OUTLINE"); end
+	
 
 	-- （未确认）
 	if (CanSetFont(NumberFontNormalLarge)) then NumberFontNormalLarge:SetFont(CLEAR_FONT_NUMBER, 14 * CF_SCALE, ""); end -- 预设值：14
@@ -440,8 +442,8 @@ function ClearFont:ApplySystemFonts()
 	-- 状态栏：头像框架中的数字（生命值、法力值/怒气值/能量值等），经验条（经验、声望等）
 	-- -----------------------------------------------------------------------------
 
-	if (CanSetFont(TextStatusBarText)) then TextStatusBarText:SetFont(CLEAR_FONT_EXP, 12 * CF_SCALE, ""); end -- 预设值：12
-	if (CanSetFont(TextStatusBarTextLarge)) then TextStatusBarTextLarge:SetFont(CLEAR_FONT_EXP, 14 * CF_SCALE, ""); end -- 预设值：15
+	if (CanSetFont(TextStatusBarText)) then TextStatusBarText:SetFont(CLEAR_FONT_EXP, 10 * CF_SCALE, "OUTLINE"); end -- 预设值：12
+	if (CanSetFont(TextStatusBarTextLarge)) then TextStatusBarTextLarge:SetFont(CLEAR_FONT_EXP, 13 * CF_SCALE, "OUTLINE"); end -- 预设值：15
 
 
 	-- -----------------------------------------------------------------------------
@@ -515,7 +517,7 @@ function ClearFont:ApplySystemFonts()
 	end -- 预设值：13
 
 	-- 成就系统描述的内容
-	if (CanSetFont(AchievementDescriptionFont)) then AchievementDescriptionFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, "");
+	if (CanSetFont(AchievementDescriptionFont)) then AchievementDescriptionFont:SetFont(CLEAR_FONT, 12 * CF_SCALE, "");
 	end -- 预设值：13
 
 	-- 成就系统描述的副标题
