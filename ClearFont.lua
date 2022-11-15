@@ -226,7 +226,7 @@ function ClearFont:ApplySystemFonts()
 	if (CanSetFont(GameFontNormalMed3)) then GameFontNormalMed3:SetTextColor(1.0, 0.82, 0); end -- 预设值：(1.0, 0.82, 0)
 
 	-- 按钮（不可选状态）
-	if (CanSetFont(GameFontDisable)) then GameFontDisable:SetFont(CLEAR_FONT, 14 * CF_SCALE, ""); end
+	if (CanSetFont(GameFontDisable)) then GameFontDisable:SetFont(CLEAR_FONT, 14 * CF_SCALE, "OUTLINE"); end
 	if (CanSetFont(GameFontDisable)) then GameFontDisable:SetTextColor(0.5, 0.5, 0.5); end -- 预设值：(0.5, 0.5, 0.5)
 
 	-- 各种色彩文字
