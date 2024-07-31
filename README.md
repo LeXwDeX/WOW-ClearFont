@@ -3,6 +3,25 @@
 
 这是一个以国服客户端为主的魔兽世界插件，根据ClearFont早期台服插件代码修改而来。
 
+目前发现怀旧服（巫妖王之怒）动作条API与正式服不一致，鉴于不想维护怀旧服，所以代码就暂时不增加动作条部分的内容了
+
+例：
+```lua
+local function SetActionBarFontSize(size)
+    for i = 1, 12 do
+        local button = _G["ActionButton" .. i]
+        if button then
+            local hotkey = _G[button:GetName() .. "HotKey"]
+            if hotkey then
+                local font, _, flags = hotkey:GetFont()
+                hotkey:SetFont(font, size, flags)
+            end
+        end
+    end
+end
+SetActionBarFontSize(12)
+```
+
 ## 特性
 
 1. 支持全局字体大小调整
