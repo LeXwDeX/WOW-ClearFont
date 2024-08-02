@@ -6,6 +6,7 @@
 目前发现怀旧服（巫妖王之怒）动作条API与正式服不一致，鉴于不想维护怀旧服，所以代码就暂时不增加动作条部分的内容了
 
 例：
+
 ```lua
 local function SetActionBarFontSize(size)
     for i = 1, 12 do
@@ -21,6 +22,12 @@ local function SetActionBarFontSize(size)
 end
 SetActionBarFontSize(12)
 ```
+
+## 字体预览
+
+![WoWScrnShot_081522_215441](./assets/WoWScrnShot_081522_215441.jpg)
+
+![WoWScrnShot_082122_140253](./assets/WoWScrnShot_082122_140253.jpg)
 
 ## 特性
 
