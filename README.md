@@ -3,7 +3,9 @@
 
 这是一个根据ClearFont早期台服插件代码修改而来。
 
-目前发现怀旧服（巫妖王之怒）动作条API与正式服不一致，鉴于不想维护怀旧服，所以代码就暂时不增加动作条部分的内容了
+强烈推荐使用：[lxgw/LxgwWenKai: An open-source Chinese font derived from Fontworks' Klee One. 一款开源中文字体，基于 FONTWORKS 出品字体 Klee One 衍生。 (github.com)](https://github.com/lxgw/LxgwWenKai) 作为魔兽世界的主要字体，该字体清晰，比原生客户端的字体要好看，并且适配也不突兀。
+
+备注：目前发现怀旧服（巫妖王之怒）动作条API与正式服不一致，鉴于不想维护怀旧服，所以代码就暂时不增加动作条部分的内容了
 
 例：
 
