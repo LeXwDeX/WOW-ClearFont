@@ -54,11 +54,11 @@ end
 -- 参考文档:https://wowpedia.fandom.com/wiki/API_FontInstance_SetFont
 -- 示范:myFontString:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE, MONOCHROME")
 -- -----------------------------------------------------------------------------
--- 对于以下可用代码的解释，目前10.0中SetFont的Flag入参支持 "OUTLINE"、"MONOCHROME"、"OUTLINE, THICK"等字符。
--- 不带描边:Obj:SetFont(FONTFILE, SCALE, "MONOCHROME")
+-- https://warcraft.wiki.gg/wiki/API_FontInstance_SetFont
+-- 对于以下可用代码的解释，目前10.0中SetFont的Flag入参支持 ""、"MONOCHROME", "OUTLINE"、 "THICKOUTLINE"等字符。
 -- 普通描边:Obj:SetFont(FONTFILE, SCALE, "OUTLINE")
--- 细描边:Obj:SetFont(FONTFILE, SCALE, "OUTLINE, THICK")
--- 粗描边:Obj:SetFont(FONTFILE, SCALE, "THICK")
+-- 细描边:Obj:SetFont(FONTFILE, SCALE, "THICKOUTLINE")
+-- 粗描边:Obj:SetFont(FONTFILE, SCALE, "OUTLINE, THICKOUTLINE")
 -- 设置颜色:Font:SetTextColor(r, g, b)
 -- 阴影颜色:Font:SetShadowColor(r, g, b)
 -- 阴影位置:Font:SetShadowOffset(x, y)
@@ -506,10 +506,10 @@ function ClearFont:ApplySystemFonts()
 	-- 发货单:拍卖行邮寄来的发货单
 	-- -----------------------------------------------------------------------------
 
-	if (CanSetFont(InvoiceTextFontNormal)) then InvoiceTextFontNormal:SetFont(CLEAR_FONT_QUEST, 13 * CF_SCALE, "THICK"); end -- 预设值:12
+	if (CanSetFont(InvoiceTextFontNormal)) then InvoiceTextFontNormal:SetFont(CLEAR_FONT_QUEST, 13 * CF_SCALE, "OUTLINE"); end -- 预设值:12
 	if (CanSetFont(InvoiceTextFontNormal)) then InvoiceTextFontNormal:SetTextColor(0.18, 0.12, 0.06); end -- 预设值:(0.18, 0.12, 0.06)
 
-	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetFont(CLEAR_FONT_QUEST, 11 * CF_SCALE, "THICK"); end -- 预设值:10
+	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetFont(CLEAR_FONT_QUEST, 11 * CF_SCALE, "THICKOUTLINE"); end -- 预设值:10
 	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetTextColor(0.18, 0.12, 0.06); end -- 预设值:(0.18, 0.12, 0.06)
 
 
