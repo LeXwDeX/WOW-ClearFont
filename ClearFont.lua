@@ -398,7 +398,7 @@ function ClearFont:ApplySystemFonts()
 	if (CanSetFont(QuestFontNormalSmall)) then QuestFontNormalSmall:SetShadowColor(0.3, 0.18, 0); end        -- 预设值:(0.3, 0.18, 0)
 
 	-- 任务高亮
-	if (CanSetFont(QuestFontHighlight)) then QuestFontHighlight:SetFont(CLEAR_FONT_QUEST, 13 * CF_SCALE, ""); end -- 预设值:13
+	if (CanSetFont(QuestFontHighlightHuge)) then QuestFontHighlightHuge:SetFont(CLEAR_FONT_QUEST, 13 * CF_SCALE, ""); end -- 预设值:13
 
 
 	-- -----------------------------------------------------------------------------
@@ -509,7 +509,7 @@ function ClearFont:ApplySystemFonts()
 	if (CanSetFont(InvoiceTextFontNormal)) then InvoiceTextFontNormal:SetFont(CLEAR_FONT_QUEST, 13 * CF_SCALE, "OUTLINE"); end -- 预设值:12
 	if (CanSetFont(InvoiceTextFontNormal)) then InvoiceTextFontNormal:SetTextColor(0.18, 0.12, 0.06); end -- 预设值:(0.18, 0.12, 0.06)
 
-	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetFont(CLEAR_FONT_QUEST, 11 * CF_SCALE, "THICKOUTLINE"); end -- 预设值:10
+	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetFont(CLEAR_FONT_QUEST, 11 * CF_SCALE, "OUTLINE"); end -- 预设值:10
 	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetTextColor(0.18, 0.12, 0.06); end -- 预设值:(0.18, 0.12, 0.06)
 
 
