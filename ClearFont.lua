@@ -512,10 +512,10 @@ function ClearFont:ApplySystemFonts()
 	-- 发货单:拍卖行邮寄来的发货单
 	-- -----------------------------------------------------------------------------
 
-	if (CanSetFont(InvoiceTextFontNormal)) then InvoiceTextFontNormal:SetFont(CLEAR_FONT_QUEST, 13 * CF_SCALE, "OUTLINE"); end -- 预设值:12
+	if (CanSetFont(InvoiceTextFontNormal)) then InvoiceTextFontNormal:SetFont(CLEAR_FONT_QUEST, 13 * CF_SCALE, ""); end -- 预设值:12
 	if (CanSetFont(InvoiceTextFontNormal)) then InvoiceTextFontNormal:SetTextColor(0.18, 0.12, 0.06); end -- 预设值:(0.18, 0.12, 0.06)
 
-	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetFont(CLEAR_FONT_QUEST, 11 * CF_SCALE, "OUTLINE"); end -- 预设值:10
+	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetFont(CLEAR_FONT_QUEST, 11 * CF_SCALE, ""); end -- 预设值:10
 	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetTextColor(0.18, 0.12, 0.06); end -- 预设值:(0.18, 0.12, 0.06)
 
 
@@ -539,16 +539,16 @@ function ClearFont:ApplySystemFonts()
 	-- -----------------------------------------------------------------------------
 
 	-- 成就系统其他面板上的成就分数
-	if (CanSetFont(AchievementPointsFont)) then AchievementPointsFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, "OUTLINE"); end -- 预设值:13
+	if (CanSetFont(AchievementPointsFont)) then AchievementPointsFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, ""); end -- 预设值:13
 
 	-- 成就系统总汇面板的成就分数
-	if (CanSetFont(AchievementPointsFontSmall)) then AchievementPointsFontSmall:SetFont(CLEAR_FONT, 13 * CF_SCALE, "OUTLINE");	end -- 预设值:13
+	if (CanSetFont(AchievementPointsFontSmall)) then AchievementPointsFontSmall:SetFont(CLEAR_FONT, 13 * CF_SCALE, "");	end -- 预设值:13
 
 	-- 成就系统描述的内容
-	if (CanSetFont(AchievementDescriptionFont)) then AchievementDescriptionFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, "OUTLINE");	end -- 预设值:13
+	if (CanSetFont(AchievementDescriptionFont)) then AchievementDescriptionFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, "");	end -- 预设值:13
 
 	-- 成就系统描述的副标题，成就条目
-	if (CanSetFont(AchievementCriteriaFont)) then AchievementCriteriaFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, "OUTLINE"); end -- 预设值:13
+	if (CanSetFont(AchievementCriteriaFont)) then AchievementCriteriaFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, ""); end -- 预设值:13
 
 	-- 成就系统记录的日期
 	if (CanSetFont(AchievementDateFont)) then AchievementDateFont:SetFont(CLEAR_FONT, 11 * CF_SCALE, ""); end -- 预设值:13
