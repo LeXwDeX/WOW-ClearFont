@@ -419,7 +419,7 @@ function ClearFont:ApplySystemFonts()
 	-- 邮件
 	-- -----------------------------------------------------------------------------
 
-	if (CanSetFont(MailTextFontNormal)) then MailTextFontNormal:SetFont(CLEAR_FONT_QUEST, 14 * CF_SCALE, "OUTLINE"); end -- 预设值:15
+	if (CanSetFont(MailTextFontNormal)) then MailTextFontNormal:SetFont(CLEAR_FONT_QUEST, 14 * CF_SCALE, ""); end -- 预设值:15
 	if (CanSetFont(MailTextFontNormal)) then MailTextFontNormal:SetTextColor(0.18, 0.12, 0.06); end -- 预设值:(0.18, 0.12, 0.06)
 	--	if (CanSetFont(MailTextFontNormal)) then MailTextFontNormal:SetShadowColor(0.54, 0.4, 0.1); end
 	--	if (CanSetFont(MailTextFontNormal)) then MailTextFontNormal:SetShadowOffset(1, -1); end
