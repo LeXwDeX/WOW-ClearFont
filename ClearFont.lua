@@ -51,18 +51,24 @@ end
 -- 这是 **修改字体大小/特效** 最重要的部分
 -- 主要的字体被最先列出，其馀部分字体按照字母表顺序排列
 -- 以下列出只包括 ClearFont 修改了的范例部分，并不是所有方面都会显示出来（范例:阴影）
--- 参考文档:https://wowpedia.fandom.com/wiki/API_FontInstance_SetFont
--- 示范:myFontString:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE, MONOCHROME")
--- -----------------------------------------------------------------------------
--- https://warcraft.wiki.gg/wiki/API_FontInstance_SetFont
--- 对于以下可用代码的解释，目前10.0中SetFont的Flag入参支持 ""、"MONOCHROME", "OUTLINE"、 "THICKOUTLINE"等字符。
--- 普通描边:Obj:SetFont(FONTFILE, SCALE, "OUTLINE")
--- 细描边:Obj:SetFont(FONTFILE, SCALE, "THICKOUTLINE")
--- 粗描边:Obj:SetFont(FONTFILE, SCALE, "OUTLINE, THICKOUTLINE")
--- 设置颜色:Font:SetTextColor(r, g, b)
--- 阴影颜色:Font:SetShadowColor(r, g, b)
--- 阴影位置:Font:SetShadowOffset(x, y)
--- 透明度:Font:SetAlpha(x)，仅接受0-1范围内
+-- 参考文档：https://warcraft.wiki.gg/wiki/API_FontInstance_SetFont
+-- 示范：success = FontInstance:SetFont(fontFile, height, flags)
+-- fontFile：字符串，字体文件路径。
+-- height：数字，UI字体大小。
+-- flags：字符串，任何以逗号分隔的flag组合。对于FontString对象，该值可以为nil。
+-- =============================================================================
+-- flags参数说明
+-- "" 			不写为默认
+-- MONOCHROME 	渲染字体时不使用抗锯齿
+-- OUTLINE 		字体渲染时带有黑色轮廓
+-- THICKOUTLINE	字体渲染时带有粗黑色轮廓
+-- =============================================================================
+-- 参考文档：https://warcraft.wiki.gg/wiki/UIOBJECT_FontInstance
+-- 设置颜色:FontInstance:SetTextColor(r, g, b)
+-- 阴影颜色:FontInstance:SetShadowColor(r, g, b [, a])
+-- 阴影位置:FontInstance:SetShadowOffset(x, y)
+-- 透明度:FontInstance:SetAlpha(x)，仅接受0.0-1.0范围内
+-- 文本间距:FontInstance:SetSpacing(spacing)
 -- =============================================================================
 
 
@@ -415,8 +421,8 @@ function ClearFont:ApplySystemFonts()
 
 	if (CanSetFont(MailTextFontNormal)) then MailTextFontNormal:SetFont(CLEAR_FONT_QUEST, 14 * CF_SCALE, ""); end -- 预设值:15
 	if (CanSetFont(MailTextFontNormal)) then MailTextFontNormal:SetTextColor(0.18, 0.12, 0.06); end -- 预设值:(0.18, 0.12, 0.06)
-	--	if (CanSetFont(MailTextFontNormal)) then 	 	  	MailTextFontNormal:SetShadowColor(0.54, 0.4, 0.1); end
-	--	if (CanSetFont(MailTextFontNormal)) then 	 	  	MailTextFontNormal:SetShadowOffset(1, -1); end
+	--	if (CanSetFont(MailTextFontNormal)) then MailTextFontNormal:SetShadowColor(0.54, 0.4, 0.1); end
+	--	if (CanSetFont(MailTextFontNormal)) then MailTextFontNormal:SetShadowOffset(1, -1); end
 
 
 	-- -----------------------------------------------------------------------------
@@ -506,10 +512,10 @@ function ClearFont:ApplySystemFonts()
 	-- 发货单:拍卖行邮寄来的发货单
 	-- -----------------------------------------------------------------------------
 
-	if (CanSetFont(InvoiceTextFontNormal)) then InvoiceTextFontNormal:SetFont(CLEAR_FONT_QUEST, 13 * CF_SCALE, "OUTLINE"); end -- 预设值:12
+	if (CanSetFont(InvoiceTextFontNormal)) then InvoiceTextFontNormal:SetFont(CLEAR_FONT_QUEST, 13 * CF_SCALE, ""); end -- 预设值:12
 	if (CanSetFont(InvoiceTextFontNormal)) then InvoiceTextFontNormal:SetTextColor(0.18, 0.12, 0.06); end -- 预设值:(0.18, 0.12, 0.06)
 
-	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetFont(CLEAR_FONT_QUEST, 11 * CF_SCALE, "OUTLINE"); end -- 预设值:10
+	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetFont(CLEAR_FONT_QUEST, 11 * CF_SCALE, ""); end -- 预设值:10
 	if (CanSetFont(InvoiceTextFontSmall)) then InvoiceTextFontSmall:SetTextColor(0.18, 0.12, 0.06); end -- 预设值:(0.18, 0.12, 0.06)
 
 
@@ -533,16 +539,16 @@ function ClearFont:ApplySystemFonts()
 	-- -----------------------------------------------------------------------------
 
 	-- 成就系统其他面板上的成就分数
-	if (CanSetFont(AchievementPointsFont)) then AchievementPointsFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, "OUTLINE"); end -- 预设值:13
+	if (CanSetFont(AchievementPointsFont)) then AchievementPointsFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, ""); end -- 预设值:13
 
 	-- 成就系统总汇面板的成就分数
-	if (CanSetFont(AchievementPointsFontSmall)) then AchievementPointsFontSmall:SetFont(CLEAR_FONT, 13 * CF_SCALE, "OUTLINE");	end -- 预设值:13
+	if (CanSetFont(AchievementPointsFontSmall)) then AchievementPointsFontSmall:SetFont(CLEAR_FONT, 13 * CF_SCALE, "");	end -- 预设值:13
 
 	-- 成就系统描述的内容
-	if (CanSetFont(AchievementDescriptionFont)) then AchievementDescriptionFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, "OUTLINE");	end -- 预设值:13
+	if (CanSetFont(AchievementDescriptionFont)) then AchievementDescriptionFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, "");	end -- 预设值:13
 
 	-- 成就系统描述的副标题，成就条目
-	if (CanSetFont(AchievementCriteriaFont)) then AchievementCriteriaFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, "OUTLINE"); end -- 预设值:13
+	if (CanSetFont(AchievementCriteriaFont)) then AchievementCriteriaFont:SetFont(CLEAR_FONT, 13 * CF_SCALE, ""); end -- 预设值:13
 
 	-- 成就系统记录的日期
 	if (CanSetFont(AchievementDateFont)) then AchievementDateFont:SetFont(CLEAR_FONT, 11 * CF_SCALE, ""); end -- 预设值:13
