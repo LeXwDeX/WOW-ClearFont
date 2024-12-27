@@ -28,7 +28,7 @@ local function CanSetFont(object)
     local cached = canSetFontCache[object]
     if cached ~= nil then return cached end
     local result = type(object) == "table" and object.SetFont and object.IsObjectType and
-    not object:IsObjectType("SimpleHTML")
+        not object:IsObjectType("SimpleHTML")
     canSetFontCache[object] = result
     return result
 end
@@ -160,7 +160,7 @@ local fontConfigurations = {
     ["FocusFontSmall"] = { font = CLEAR_FONT, size = 15 * CF_SCALE, style = "OUTLINE" },
 
     -- 玩家角色头像被命中指示器
-    ["PlayerHitIndicator"] = { font = "Fonts/ARIALN.ttf", size = 30, style = "OUTLINE" },
+    ["PlayerHitIndicator"] = { font = "Fonts/ARIALN.ttf", size = 30, style = "OUTLINE", shadowColor = { 0, 0, 0, 0.25 }, shadowOffset = { 1, -1 } },
 }
 
 -- 更新时钟字体
@@ -187,7 +187,7 @@ local function UpdateClockFont()
 
                 -- 应用字体设置
                 region:SetFont(settings.font, settings.size, settings.style)
-                
+
                 -- 应用位置设置
                 if settings.originalPos then
                     region:ClearAllPoints()
@@ -308,7 +308,7 @@ local specialFontSettings = {
         font = CLEAR_FONT,
         size = 15 * CF_SCALE,
         style = "OUTLINE",
-        alpha = 1, -- 只保留透明度
+        alpha = 1,
     },
     ClockText = {
         font = CLEAR_FONT,
@@ -412,7 +412,7 @@ local function UpdateClockFont()
 
                 -- 应用字体设置
                 region:SetFont(settings.font, settings.size, settings.style)
-                
+
                 -- 应用位置设置
                 if settings.originalPos then
                     region:ClearAllPoints()
@@ -457,7 +457,7 @@ local function UpdateTargetLevel()
     end
 end
 
--- 定义特殊更新表
+-- 定义特殊更新的动作表
 local specialUpdates = {
     {
         update_function = UpdateClockFont,
@@ -1030,7 +1030,7 @@ function ClearFont:UpdateSpecialFonts()
 
         -- 仅在第一次时保存原始位置
         if not settings.originalPos then
-            local point, relativeTo, relativePoint, xOfs, yOfs = targetName:GetPoint(1) -- 使用 GetPoint(1) 确保获取第一个锚点
+            local point, relativeTo, relativePoint, xOfs, yOfs = targetName:GetPoint(1) -- 重要：使用 GetPoint(1) 确保获取第一个锚点
             if point then
                 settings.originalPos = {
                     point = point,
