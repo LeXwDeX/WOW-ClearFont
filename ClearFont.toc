@@ -1,10 +1,8 @@
-## Interface: 115000
-## Version: 10.0.0
-## Title: ClearFont |r|cFF0099FFby Bradamant|r
-## Title-zhCN: ClearFont |r|cFF0099FFby Bradamant|r
-## Notes: Modify Game Fonts and Size, Color, Shadow Of Them.(For FontShow ZhCN Mode)
-## Notes-zhCN: 修改一些字体的大小和颜色。
-## Author: 白银之手 Bradamant
-## DefaultState: Enabled
-## LoadOnDemand: 0
+## Interface: 100200
+## Title: ClearFont
+## Notes: 字体美化插件
+## Author: Ironvalor-白银之手
+## SavedVariables: ClearFontDB
+
+# Main files
 ClearFont.lua

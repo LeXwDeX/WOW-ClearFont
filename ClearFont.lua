@@ -4,14 +4,17 @@
 
 local ClearFont = CreateFrame("Frame", "ClearFont")
 
+-- 添加保存配置的变量
+ClearFontDB = ClearFontDB or {}
+
 -- Font paths
 local CLEAR_FONT_BASE = "Fonts/"
+local CLEAR_FONT = CLEAR_FONT_BASE .. "ARKai_T.TTF"
 local CLEAR_FONT_ZDSZ = CLEAR_FONT_BASE .. "YHSZ.ttf"
-local CLEAR_FONT_NUMBER = CLEAR_FONT_BASE .. "RIZQT_.TTF" 
+local CLEAR_FONT_NUMBER = CLEAR_FONT_BASE .. "RIZQT_.TTF"
 local CLEAR_FONT_EXP = CLEAR_FONT_BASE .. "ARIALN.TTF"
 local CLEAR_FONT_QUEST = CLEAR_FONT_BASE .. "ARIALN.TTF"
 local CLEAR_FONT_DAMAGE = CLEAR_FONT_BASE .. "ARKai_C.TTF"
-local CLEAR_FONT = CLEAR_FONT_BASE .. "ARKai_T.TTF"
 local CLEAR_FONT_ITEM = CLEAR_FONT_BASE .. "ARHei.TTF"
 local CLEAR_FONT_CHAT = CLEAR_FONT_BASE .. "ARHei.TTF"
 
@@ -28,6 +31,16 @@ local function CanSetFont(object)
     canSetFontCache[object] = result
     return result
 end
+
+-- Font styles configuration
+local fontStyles = {
+    {"普通", ""},
+    {"轮廓", "OUTLINE"},
+    {"厚轮廓", "THICKOUTLINE"},
+    {"单色", "MONOCHROME"},
+    {"单色轮廓", "MONOCHROME,OUTLINE"},
+    {"单色厚轮廓", "MONOCHROME,THICKOUTLINE"}
+}
 
 -- Font configurations
 local fontConfigurations = {
@@ -204,7 +217,123 @@ function ClearFont:ApplyFontSettings()
 end
 
 -- =============================================================================
---  C. Special updates for UI elements
+--  C. Special UI elements Data
+-- =============================================================================
+
+local specialFontSettings = {
+    PlayerName = {
+        font = CLEAR_FONT,
+        size = 12 * CF_SCALE,
+        style = "OUTLINE",
+        xOffset = 0,
+        yOffset = 0,
+        originalPos = nil,
+        shadowColor = {0, 0, 0, 1},
+        shadowOffset = {1, -1}
+    },
+    PlayerLevel = {
+        font = CLEAR_FONT,
+        size = 12 * CF_SCALE,
+        style = "OUTLINE",
+        xOffset = 0,
+        yOffset = 0,
+        originalPos = nil,
+        shadowColor = {0, 0, 0, 1},
+        shadowOffset = {1, -1}
+    },
+    TargetName = {
+        font = CLEAR_FONT,
+        size = 10 * CF_SCALE,
+        style = "OUTLINE",
+        xOffset = 0,
+        yOffset = 0,
+        originalPos = nil,
+        shadowColor = {0, 0, 0, 1},
+        shadowOffset = {1, -1}
+    },
+    TargetLevel = {
+        font = CLEAR_FONT,
+        size = 12 * CF_SCALE,
+        style = "OUTLINE",
+        xOffset = 0,
+        yOffset = 0,
+        originalPos = nil,
+        shadowColor = {0, 0, 0, 1},
+        shadowOffset = {1, -1}
+    },
+    ActionHotkey = {
+        font = CLEAR_FONT,
+        size = 15 * CF_SCALE,
+        style = "OUTLINE",
+        alpha = 1, -- 只保留透明度
+    },
+}
+
+-- 将 UpdateActionBarFonts 函数移到文件前面，LoadSavedSettings 函数之前
+local function UpdateActionBarFonts()
+    local actionBars = {
+        "ActionButton",
+        "MultiBarBottomLeftButton",
+        "MultiBarBottomRightButton",
+        "MultiBarRightButton",
+        "MultiBarLeftButton",
+        "MultiBar5Button",
+        "MultiBar6Button",
+        "MultiBar7Button"
+    }
+
+    local settings = specialFontSettings.ActionHotkey
+    
+    for _, barName in ipairs(actionBars) do
+        for i = 1, 12 do
+            local button = _G[barName .. i]
+            if button then
+                local hotkey = _G[button:GetName() .. "HotKey"]
+                local name = _G[button:GetName() .. "Name"]
+                if hotkey and CanSetFont(hotkey) then
+                    hotkey:SetFont(settings.font, settings.size, settings.style)
+                    hotkey:SetAlpha(settings.alpha)
+                end
+                if name and CanSetFont(name) then
+                    name:SetFont(CLEAR_FONT, 8 * CF_SCALE, "OUTLINE")
+                end
+            end
+        end
+    end
+end
+
+local function LoadSavedSettings()
+    if ClearFontDB.fontSettings then
+        -- 合并保存的设置，保持默认值作为后备
+        for key, savedSettings in pairs(ClearFontDB.fontSettings) do
+            if specialFontSettings[key] then
+                for setting, value in pairs(savedSettings) do
+                    specialFontSettings[key][setting] = value
+                end
+            end
+        end
+    end
+    -- 立即更新动作条字体
+    UpdateActionBarFonts()
+end
+
+-- 在设置更改的地方添加保存函数
+local function SaveSettings()
+    ClearFontDB.fontSettings = ClearFontDB.fontSettings or {}
+    -- 保存所有特殊字体设置
+    for key, settings in pairs(specialFontSettings) do
+        ClearFontDB.fontSettings[key] = ClearFontDB.fontSettings[key] or {}
+        for setting, value in pairs(settings) do
+            -- 只保存需要的设置，跳过原始位置
+            if setting ~= "originalPos" then
+                ClearFontDB.fontSettings[key][setting] = value
+            end
+        end
+    end
+end
+
+-- =============================================================================
+--  D. Special updates for UI elements Function
 -- =============================================================================
 
 -- Define update functions for special UI elements
@@ -253,35 +382,6 @@ local function UpdateTargetLevel()
     end
 end
 
-local function UpdateActionBarFonts()
-    local actionBars = {
-        "ActionButton",
-        "MultiBarBottomLeftButton",
-        "MultiBarBottomRightButton",
-        "MultiBarRightButton",
-        "MultiBarLeftButton",
-        "MultiBar5Button",
-        "MultiBar6Button",
-        "MultiBar7Button"
-    }
-
-    for _, barName in ipairs(actionBars) do
-        for i = 1, 12 do
-            local button = _G[barName .. i]
-            if button then
-                local hotkey = _G[button:GetName() .. "HotKey"]
-                local name = _G[button:GetName() .. "Name"]
-                if hotkey and CanSetFont(hotkey) then
-                    hotkey:SetFont(CLEAR_FONT, 15 * CF_SCALE, "OUTLINE")
-                end
-                if name and CanSetFont(name) then
-                    name:SetFont(CLEAR_FONT, 8 * CF_SCALE, "OUTLINE")
-                end
-            end
-        end
-    end
-end
-
 -- Define special updates table
 local specialUpdates = {
     {
@@ -316,30 +416,512 @@ for _, updateInfo in ipairs(specialUpdates) do
 end
 
 -- =============================================================================
---  D. Event handling and initialization
+--  E. Special UI elements UI
 -- =============================================================================
+local function CreateConfigUI()
+    -- 创建主框架
+    local frame = CreateFrame("Frame", "ClearFontConfig", UIParent, "BasicFrameTemplateWithInset")
+    frame:SetSize(400, 500)
+    frame:SetPoint("CENTER")
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:Hide()
+    
+    -- 修改主标题的位置和样式
+    frame.title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+    frame.title:SetPoint("TOPLEFT", 15, -5)
+    frame.title:SetText("ClearFont 字体设置")
 
-ClearFont:SetScript("OnEvent", function(self, event)
-    ClearFont:ApplyFontSettings()
-    if eventHandlers[event] then
-        for _, updateInfo in ipairs(eventHandlers[event]) do
-            local delay = updateInfo.delay or 0
-            if delay > 0 then
-                C_Timer.After(delay, updateInfo.update_function)
-            else
-                updateInfo.update_function()
+    -- 创建更紧凑的滚动框架
+    local scrollFrame = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 10, -25)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -30, 40)
+
+    local content = CreateFrame("Frame", nil, scrollFrame)
+    content:SetSize(360, 800)
+    scrollFrame:SetScrollChild(content)
+
+    -- 字体设置部分
+    local elements = {
+        {name = "玩家名字", key = "PlayerName"},
+        {name = "玩家等级", key = "PlayerLevel"},
+        {name = "目标名字", key = "TargetName"},
+        {name = "目标等级", key = "TargetLevel"}
+    }
+
+    local yOffset = 10
+    for i, element in ipairs(elements) do
+        -- 创建分组框架，减小高度
+        local groupFrame = CreateFrame("Frame", nil, content)
+        groupFrame:SetSize(340, 150)
+        groupFrame:SetPoint("TOPLEFT", 10, -yOffset)
+        
+        -- 分类标题背景
+        local headerBg = groupFrame:CreateTexture(nil, "BACKGROUND")
+        headerBg:SetPoint("TOPLEFT", 0, 0)
+        headerBg:SetPoint("TOPRIGHT", 0, 0)
+        headerBg:SetHeight(24)
+        headerBg:SetColorTexture(0.1, 0.1, 0.1, 0.5)
+
+        -- 分类标题
+        local header = groupFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        header:SetPoint("TOPLEFT", 10, -4)
+        header:SetText(element.name)
+
+        -- 字体样式标签
+        local styleLabel = groupFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        styleLabel:SetPoint("TOPLEFT", 10, -35)
+        styleLabel:SetText("字体样式")
+
+        -- 字体样式下拉菜单
+        local styleDropdown = CreateFrame("Frame", "ClearFont_"..element.key.."_StyleDropdown", groupFrame, "UIDropDownMenuTemplate")
+        styleDropdown:SetPoint("TOPLEFT", 0, -55)
+        
+        local function Initialize(self, level)
+            local info = UIDropDownMenu_CreateInfo()
+            for _, style in ipairs(fontStyles) do
+                info.text = style[1]
+                info.value = style[2]
+                info.checked = (specialFontSettings[element.key].style == style[2])
+                info.func = function()
+                    specialFontSettings[element.key].style = style[2]
+                    UIDropDownMenu_SetText(styleDropdown, style[1])
+                    ClearFont:UpdateSpecialFonts()
+                    SaveSettings()
+                end
+                UIDropDownMenu_AddButton(info, level)
             end
         end
+
+        UIDropDownMenu_Initialize(styleDropdown, Initialize)
+        UIDropDownMenu_SetWidth(styleDropdown, 120)
+        UIDropDownMenu_SetText(styleDropdown, "字体样式")
+
+        -- 字体大小滑动条
+        local sizeSlider = CreateFrame("Slider", nil, groupFrame, "OptionsSliderTemplate")
+        sizeSlider:SetPoint("TOPLEFT", 20, -100)
+        sizeSlider:SetWidth(310)
+        sizeSlider:SetMinMaxValues(8, 30)
+        sizeSlider:SetValue(specialFontSettings[element.key].size / CF_SCALE)
+        sizeSlider:SetValueStep(1)
+        sizeSlider.Text:SetText("字体大小")
+        sizeSlider.Low:SetText("8")
+        sizeSlider.High:SetText("30")
+        sizeSlider:SetScript("OnValueChanged", function(self, value)
+            specialFontSettings[element.key].size = value * CF_SCALE
+            ClearFont:UpdateSpecialFonts()
+            self.valueText:SetText(string.format("%.0f", value))
+            SaveSettings()
+        end)
+        
+        -- 当前值显示
+        sizeSlider.valueText = groupFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        sizeSlider.valueText:SetPoint("TOP", sizeSlider, "BOTTOM", 0, 0)
+        sizeSlider.valueText:SetText(string.format("%.0f", sizeSlider:GetValue()))
+        
+        -- X偏移滑动条
+        local xOffsetSlider = CreateFrame("Slider", nil, groupFrame, "OptionsSliderTemplate")
+        xOffsetSlider:SetPoint("TOPLEFT", 20, -140)
+        xOffsetSlider:SetWidth(140)
+        xOffsetSlider:SetMinMaxValues(-5, 5)
+        xOffsetSlider:SetValue(0)
+        xOffsetSlider:SetValueStep(0.01)
+        xOffsetSlider.Text:SetText("X轴偏移")
+        xOffsetSlider.Low:SetText("-5")
+        xOffsetSlider.High:SetText("5")
+        
+        -- 创建数值显示
+        xOffsetSlider.valueText = groupFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        xOffsetSlider.valueText:SetPoint("TOP", xOffsetSlider, "BOTTOM", 0, 0)
+        xOffsetSlider.valueText:SetText("0.00")
+        
+        -- 设置值变化时的处理
+        xOffsetSlider:SetScript("OnValueChanged", function(self, value)
+            local settings = specialFontSettings[element.key]
+            settings.xOffset = value
+            self.valueText:SetText(string.format("%.2f", value))
+            ClearFont:UpdateSpecialFonts()
+            SaveSettings()
+        end)
+        
+        -- Y偏移滑动条
+        local yOffsetSlider = CreateFrame("Slider", nil, groupFrame, "OptionsSliderTemplate")
+        yOffsetSlider:SetPoint("TOPLEFT", 190, -140)
+        yOffsetSlider:SetWidth(140)
+        yOffsetSlider:SetMinMaxValues(-5, 5)
+        yOffsetSlider:SetValue(0)
+        yOffsetSlider:SetValueStep(0.01)
+        yOffsetSlider.Text:SetText("Y轴偏移")
+        yOffsetSlider.Low:SetText("-5")
+        yOffsetSlider.High:SetText("5")
+        
+        -- 创建数值显示
+        yOffsetSlider.valueText = groupFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        yOffsetSlider.valueText:SetPoint("TOP", yOffsetSlider, "BOTTOM", 0, 0)
+        yOffsetSlider.valueText:SetText("0.00")
+        
+        -- 设置值变化时的处理
+        yOffsetSlider:SetScript("OnValueChanged", function(self, value)
+            local settings = specialFontSettings[element.key]
+            settings.yOffset = value
+            self.valueText:SetText(string.format("%.2f", value))
+            ClearFont:UpdateSpecialFonts()
+            SaveSettings()
+        end)
+        
+        yOffset = yOffset + 190  -- 减小每个分组之间的间距
+    end
+
+    -- 动作条热键配置组
+    local hotkeyGroup = CreateFrame("Frame", nil, content)
+    hotkeyGroup:SetSize(340, 150) -- 减小高度，因为移除了RGB滑动条
+    hotkeyGroup:SetPoint("TOPLEFT", 10, -yOffset)
+    
+    -- 分类标题背景
+    local headerBg = hotkeyGroup:CreateTexture(nil, "BACKGROUND")
+    headerBg:SetPoint("TOPLEFT", 0, 0)
+    headerBg:SetPoint("TOPRIGHT", 0, 0)
+    headerBg:SetHeight(24)
+    headerBg:SetColorTexture(0.1, 0.1, 0.1, 0.5)
+
+    -- 分类标题
+    local header = hotkeyGroup:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    header:SetPoint("TOPLEFT", 10, -4)
+    header:SetText("动作条热键")
+
+    -- 字体样式下拉菜单
+    local styleDropdown = CreateFrame("Frame", "ClearFont_ActionHotkey_StyleDropdown", hotkeyGroup, "UIDropDownMenuTemplate")
+    styleDropdown:SetPoint("TOPLEFT", 0, -35)
+    
+    local function Initialize(self, level)
+        local info = UIDropDownMenu_CreateInfo()
+        for _, style in ipairs(fontStyles) do
+            info.text = style[1]
+            info.value = style[2]
+            info.checked = (specialFontSettings.ActionHotkey.style == style[2])
+            info.func = function()
+                specialFontSettings.ActionHotkey.style = style[2]
+                UIDropDownMenu_SetText(styleDropdown, style[1])
+                UpdateActionBarFonts()
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end
+
+    UIDropDownMenu_Initialize(styleDropdown, Initialize)
+    UIDropDownMenu_SetWidth(styleDropdown, 120)
+    UIDropDownMenu_SetText(styleDropdown, "字体样式")
+
+    -- 字体大小滑动条
+    local sizeSlider = CreateFrame("Slider", nil, hotkeyGroup, "OptionsSliderTemplate")
+    sizeSlider:SetPoint("TOPLEFT", 20, -80)
+    sizeSlider:SetWidth(310)
+    sizeSlider:SetMinMaxValues(8, 30)
+    sizeSlider:SetValue(specialFontSettings.ActionHotkey.size / CF_SCALE)
+    sizeSlider:SetValueStep(1)
+    sizeSlider.Text:SetText("字体大小")
+    sizeSlider.Low:SetText("8")
+    sizeSlider.High:SetText("30")
+    
+    sizeSlider:SetScript("OnValueChanged", function(self, value)
+        specialFontSettings.ActionHotkey.size = value * CF_SCALE
+        UpdateActionBarFonts()
+        self.valueText:SetText(string.format("%d", value))
+        SaveSettings()
+    end)
+    
+    sizeSlider.valueText = hotkeyGroup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    sizeSlider.valueText:SetPoint("TOP", sizeSlider, "BOTTOM", 0, 0)
+    sizeSlider.valueText:SetText(string.format("%d", sizeSlider:GetValue()))
+
+    -- 透明度滑动条
+    local alphaSlider = CreateFrame("Slider", nil, hotkeyGroup, "OptionsSliderTemplate")
+    alphaSlider:SetPoint("TOPLEFT", 20, -120)
+    alphaSlider:SetWidth(310)
+    alphaSlider:SetMinMaxValues(0, 100)
+    alphaSlider:SetValue(specialFontSettings.ActionHotkey.alpha * 100)
+    alphaSlider:SetValueStep(1)
+    alphaSlider.Text:SetText("透明度")
+    alphaSlider.Low:SetText("0")
+    alphaSlider.High:SetText("100")
+    
+    alphaSlider:SetScript("OnValueChanged", function(self, value)
+        specialFontSettings.ActionHotkey.alpha = value / 100
+        -- 更新所有动作条热键的透明度
+        local actionBars = {
+            "ActionButton",
+            "MultiBarBottomLeftButton",
+            "MultiBarBottomRightButton",
+            "MultiBarRightButton",
+            "MultiBarLeftButton",
+            "MultiBar5Button",
+            "MultiBar6Button",
+            "MultiBar7Button"
+        }
+        
+        for _, barName in ipairs(actionBars) do
+            for i = 1, 12 do
+                local button = _G[barName .. i]
+                if button then
+                    local hotkey = _G[button:GetName() .. "HotKey"]
+                    if hotkey and CanSetFont(hotkey) then
+                        hotkey:SetAlpha(value / 100)
+                    end
+                end
+            end
+        end
+        
+        self.valueText:SetText(string.format("%d", value))
+        SaveSettings()
+    end)
+    
+    alphaSlider.valueText = hotkeyGroup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    alphaSlider.valueText:SetPoint("TOP", alphaSlider, "BOTTOM", 0, 0)
+    alphaSlider.valueText:SetText(string.format("%d", alphaSlider:GetValue()))
+
+    yOffset = yOffset + 180  -- 调整后续内容的位置
+    
+    -- 调整内容框架的大小
+    content:SetSize(360, yOffset + 20)  -- 根据实际内容调整高度
+
+    -- 底部按钮样式优化
+    local buttonHeight = 25
+    local buttonWidth = 100
+    local buttonSpacing = 10
+
+    -- 重置按钮
+    local resetButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    resetButton:SetSize(buttonWidth, buttonHeight)
+    resetButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", buttonSpacing, buttonSpacing)
+    resetButton:SetText("重置")
+    resetButton:SetScript("OnClick", function()
+        -- 重置所有设置到默认值
+        for _, element in ipairs(elements) do
+            specialFontSettings[element.key] = {
+                font = CLEAR_FONT,
+                size = 10 * CF_SCALE,
+                style = "OUTLINE",
+                xOffset = 0,
+                yOffset = 0,
+                shadowColor = {0, 0, 0, 1},
+                shadowOffset = {1, -1}
+            }
+        end
+        SaveSettings() -- 添加保存
+        ClearFont:UpdateSpecialFonts()
+        -- 重新加载界面
+        frame:Hide()
+        frame:Show()
+    end)
+
+    -- 应用按钮
+    local applyButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    applyButton:SetSize(buttonWidth, buttonHeight)
+    applyButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -buttonSpacing, buttonSpacing)
+    applyButton:SetText("应用")
+    applyButton:SetScript("OnClick", function()
+        ClearFont:UpdateSpecialFonts()
+    end)
+
+    return frame
+end
+
+-- =============================================================================
+--  F. Event handling and initialization
+-- =============================================================================
+
+ClearFont:SetScript("OnEvent", function(self, event, addon)
+    if event == "ADDON_LOADED" and addon == "ClearFont" then
+        LoadSavedSettings()
+        print("ClearFont loaded successfully")
+        -- 初始化配置界面
+        if not ClearFontConfig then
+            ClearFontConfig = CreateConfigUI()
+        end
+    elseif event == "PLAYER_LOGIN" then
+        -- 在玩家登录时应用所有字体设置
+        C_Timer.After(0.1, function()
+            ClearFont:ApplyFontSettings()
+            ClearFont:UpdateSpecialFonts()
+        end)
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        -- 在进入世界时再次应用设置
+        C_Timer.After(0.1, function()
+            ClearFont:UpdateSpecialFonts()
+        end)
+    elseif event == "PLAYER_TARGET_CHANGED" then
+        C_Timer.After(0, function()
+            ClearFont:UpdateSpecialFonts()
+        end)
     end
 end)
+
+-- 注册额外的事件
+ClearFont:RegisterEvent("PLAYER_ENTERING_WORLD")
+ClearFont:RegisterEvent("ADDON_LOADED")
+ClearFont:RegisterEvent("PLAYER_LOGIN")
+ClearFont:RegisterEvent("PLAYER_TARGET_CHANGED")
 
 -- Register events
 for event in pairs(eventHandlers) do
     ClearFont:RegisterEvent(event)
 end
 
-ClearFont:RegisterEvent("ADDON_LOADED")
-ClearFont:RegisterEvent("PLAYER_LOGIN")
+-- =============================================================================
+--  G. Special updates for UI elements Function
+-- =============================================================================
 
--- Apply font settings on startup
-ClearFont:ApplyFontSettings()
+function ClearFont:UpdateSpecialFonts()
+    -- 更新玩家名字
+    local playerName = PlayerFrame.name
+    if playerName then
+        local settings = specialFontSettings.PlayerName
+        
+        -- 如果还没有记录原始位置，则记录
+        if not settings.originalPos then
+            local point, relativeTo, relativePoint, xOfs, yOfs = playerName:GetPoint()
+            settings.originalPos = {
+                point = point,
+                relativeTo = relativeTo,
+                relativePoint = relativePoint,
+                xOfs = xOfs or 0,
+                yOfs = yOfs or 0
+            }
+        end
+
+        playerName:SetFont(settings.font, settings.size, settings.style)
+        playerName:ClearAllPoints()
+        -- 使用原始位置加上偏移值
+        playerName:SetPoint(
+            settings.originalPos.point,
+            settings.originalPos.relativeTo,
+            settings.originalPos.relativePoint,
+            settings.originalPos.xOfs + settings.xOffset,
+            settings.originalPos.yOfs + settings.yOffset
+        )
+        playerName:SetShadowColor(unpack(settings.shadowColor))
+        playerName:SetShadowOffset(unpack(settings.shadowOffset))
+    end
+
+    -- 更新玩家等级
+    local playerLevel = PlayerLevelText
+    if playerLevel then
+        local settings = specialFontSettings.PlayerLevel
+        
+        -- 如果还没有记录原始位置，则记录
+        if not settings.originalPos then
+            local point, relativeTo, relativePoint, xOfs, yOfs = playerLevel:GetPoint()
+            settings.originalPos = {
+                point = point,
+                relativeTo = relativeTo,
+                relativePoint = relativePoint,
+                xOfs = xOfs or 0,
+                yOfs = yOfs or 0
+            }
+        end
+
+        playerLevel:SetFont(settings.font, settings.size, settings.style)
+        playerLevel:ClearAllPoints()
+        -- 使用原始位置加上偏移值
+        playerLevel:SetPoint(
+            settings.originalPos.point,
+            settings.originalPos.relativeTo,
+            settings.originalPos.relativePoint,
+            settings.originalPos.xOfs + settings.xOffset,
+            settings.originalPos.yOfs + settings.yOffset
+        )
+        playerLevel:SetShadowColor(unpack(settings.shadowColor))
+        playerLevel:SetShadowOffset(unpack(settings.shadowOffset))
+    end
+
+    -- 更新目标名字
+    local targetName = TargetFrame.name
+    if targetName then
+        local settings = specialFontSettings.TargetName
+        
+        -- 仅在第一次时保存原始位置
+        if not settings.originalPos then
+            local point, relativeTo, relativePoint, xOfs, yOfs = targetName:GetPoint(1) -- 使用 GetPoint(1) 确保获取第一个锚点
+            if point then
+                settings.originalPos = {
+                    point = point,
+                    relativeTo = relativeTo,
+                    relativePoint = relativePoint,
+                    xOfs = xOfs or 0,
+                    yOfs = yOfs or 0
+                }
+            end
+        end
+
+        -- 应用字体设置
+        targetName:SetFont(settings.font, settings.size, settings.style)
+        
+        -- 仅当有原始位置时才重新设置位置
+        if settings.originalPos then
+            targetName:ClearAllPoints()
+            targetName:SetPoint(
+                settings.originalPos.point,
+                settings.originalPos.relativeTo,
+                settings.originalPos.relativePoint,
+                settings.originalPos.xOfs + settings.xOffset,
+                settings.originalPos.yOfs + settings.yOffset
+            )
+        end
+        
+        targetName:SetShadowColor(unpack(settings.shadowColor))
+        targetName:SetShadowOffset(unpack(settings.shadowOffset))
+    end
+
+    -- 更新目标等级
+    local targetLevel = TargetFrameTextureFrameLevelText
+    if targetLevel then
+        local settings = specialFontSettings.TargetLevel
+        
+        if not settings.originalPos then
+            local point, relativeTo, relativePoint, xOfs, yOfs = targetLevel:GetPoint(1)
+            if point then
+                settings.originalPos = {
+                    point = point,
+                    relativeTo = relativeTo,
+                    relativePoint = relativePoint,
+                    xOfs = xOfs or 0,
+                    yOfs = yOfs or 0
+                }
+            end
+        end
+
+        -- 应用字体设置
+        targetLevel:SetFont(settings.font, settings.size, settings.style)
+        
+        -- 基于原始位置应用偏移
+        if settings.originalPos then
+            targetLevel:ClearAllPoints()
+            targetLevel:SetPoint(
+                settings.originalPos.point,
+                settings.originalPos.relativeTo,
+                settings.originalPos.relativePoint,
+                settings.originalPos.xOfs + settings.xOffset,
+                settings.originalPos.yOfs + settings.yOffset
+            )
+        end
+        
+        targetLevel:SetShadowColor(unpack(settings.shadowColor))
+        targetLevel:SetShadowOffset(unpack(settings.shadowOffset))
+    end
+end
+
+-- =============================================================================
+--  H. Slash command support
+-- =============================================================================
+
+SLASH_CLEARFONT1 = "/clearfont"
+SlashCmdList["CLEARFONT"] = function(msg)
+    if not ClearFontConfig then
+        ClearFontConfig = CreateConfigUI()
+    end
+    ClearFontConfig:SetShown(not ClearFontConfig:IsShown())
+end
+
