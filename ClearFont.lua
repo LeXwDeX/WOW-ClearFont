@@ -163,6 +163,47 @@ local fontConfigurations = {
     ["PlayerHitIndicator"] = { font = "Fonts/ARIALN.ttf", size = 30, style = "OUTLINE" },
 }
 
+-- 更新时钟字体
+local function UpdateClockFont()
+    local clockButton = _G["TimeManagerClockButton"]
+    if clockButton then
+        local settings = specialFontSettings.ClockText
+        local regions = { clockButton:GetRegions() }
+        for _, region in ipairs(regions) do
+            if region:GetObjectType() == "FontString" then
+                -- 保存原始位置（如果还没有保存）
+                if not settings.originalPos then
+                    local point, relativeTo, relativePoint, xOfs, yOfs = region:GetPoint()
+                    if point then
+                        settings.originalPos = {
+                            point = point,
+                            relativeTo = relativeTo,
+                            relativePoint = relativePoint,
+                            xOfs = xOfs or 0,
+                            yOfs = yOfs or 0
+                        }
+                    end
+                end
+
+                -- 应用字体设置
+                region:SetFont(settings.font, settings.size, settings.style)
+                
+                -- 应用位置设置
+                if settings.originalPos then
+                    region:ClearAllPoints()
+                    region:SetPoint(
+                        settings.originalPos.point,
+                        settings.originalPos.relativeTo,
+                        settings.originalPos.relativePoint,
+                        settings.originalPos.xOfs + settings.xOffset,
+                        settings.originalPos.yOfs + settings.yOffset
+                    )
+                end
+            end
+        end
+    end
+end
+
 -- =============================================================================
 --  B. 应用字体设置的函数
 -- =============================================================================
@@ -269,6 +310,16 @@ local specialFontSettings = {
         style = "OUTLINE",
         alpha = 1, -- 只保留透明度
     },
+    ClockText = {
+        font = CLEAR_FONT,
+        size = 8 * CF_SCALE,
+        style = "",
+        xOffset = 0,
+        yOffset = 0,
+        originalPos = nil,
+        shadowColor = { 0, 0, 0, 1 },
+        shadowOffset = { 1, -1 }
+    },
 }
 
 -- 更新动作条字体
@@ -315,6 +366,7 @@ local function LoadSavedSettings()
         end
     end
     UpdateActionBarFonts()
+    UpdateClockFont()
 end
 
 -- 在设置更改的地方添加保存函数
@@ -340,17 +392,37 @@ end
 local function UpdateClockFont()
     local clockButton = _G["TimeManagerClockButton"]
     if clockButton then
-        local FONT_X_OFFSET = 0.1
-        local FONT_Y_OFFSET = -0.1
+        local settings = specialFontSettings.ClockText
         local regions = { clockButton:GetRegions() }
         for _, region in ipairs(regions) do
             if region:GetObjectType() == "FontString" then
-                region:SetFont(CLEAR_FONT, 8 * CF_SCALE, "")
-                local point, relativeTo, relativePoint, xOfs, yOfs = region:GetPoint()
-                if point then
+                -- 保存原始位置（如果还没有保存）
+                if not settings.originalPos then
+                    local point, relativeTo, relativePoint, xOfs, yOfs = region:GetPoint()
+                    if point then
+                        settings.originalPos = {
+                            point = point,
+                            relativeTo = relativeTo,
+                            relativePoint = relativePoint,
+                            xOfs = xOfs or 0,
+                            yOfs = yOfs or 0
+                        }
+                    end
+                end
+
+                -- 应用字体设置
+                region:SetFont(settings.font, settings.size, settings.style)
+                
+                -- 应用位置设置
+                if settings.originalPos then
                     region:ClearAllPoints()
-                    region:SetPoint(point, relativeTo, relativePoint, (xOfs or 0) + FONT_X_OFFSET,
-                        (yOfs or 0) + FONT_Y_OFFSET)
+                    region:SetPoint(
+                        settings.originalPos.point,
+                        settings.originalPos.relativeTo,
+                        settings.originalPos.relativePoint,
+                        settings.originalPos.xOfs + settings.xOffset,
+                        settings.originalPos.yOfs + settings.yOffset
+                    )
                 end
             end
         end
@@ -687,10 +759,119 @@ local function CreateConfigUI()
     alphaSlider.valueText:SetPoint("TOP", alphaSlider, "BOTTOM", 0, 0)
     alphaSlider.valueText:SetText(string.format("%d", alphaSlider:GetValue()))
 
-    yOffset = yOffset + 180 -- 调整后续内容的位置
+    yOffset = yOffset + 160
+
+    -- 时钟字体配置组
+    local clockGroup = CreateFrame("Frame", nil, content)
+    clockGroup:SetSize(340, 150)
+    clockGroup:SetPoint("TOPLEFT", 10, -yOffset)
+
+    -- 分类标题背景
+    local headerBg = clockGroup:CreateTexture(nil, "BACKGROUND")
+    headerBg:SetPoint("TOPLEFT", 0, 0)
+    headerBg:SetPoint("TOPRIGHT", 0, 0)
+    headerBg:SetHeight(24)
+    headerBg:SetColorTexture(0.1, 0.1, 0.1, 0.5)
+
+    -- 分类标题
+    local header = clockGroup:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    header:SetPoint("TOPLEFT", 10, -4)
+    header:SetText("时钟字体")
+
+    -- 字体样式下拉菜单
+    local styleDropdown = CreateFrame("Frame", "ClearFont_ClockText_StyleDropdown", clockGroup, "UIDropDownMenuTemplate")
+    styleDropdown:SetPoint("TOPLEFT", 0, -35)
+
+    local function Initialize(self, level)
+        local info = UIDropDownMenu_CreateInfo()
+        for _, style in ipairs(fontStyles) do
+            info.text = style[1]
+            info.value = style[2]
+            info.checked = (specialFontSettings.ClockText.style == style[2])
+            info.func = function()
+                specialFontSettings.ClockText.style = style[2]
+                UIDropDownMenu_SetText(styleDropdown, style[1])
+                UpdateClockFont()
+                SaveSettings()
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end
+
+    UIDropDownMenu_Initialize(styleDropdown, Initialize)
+    UIDropDownMenu_SetWidth(styleDropdown, 120)
+    UIDropDownMenu_SetText(styleDropdown, "字体样式")
+
+    -- 字体大小滑动条
+    local sizeSlider = CreateFrame("Slider", nil, clockGroup, "OptionsSliderTemplate")
+    sizeSlider:SetPoint("TOPLEFT", 20, -80)
+    sizeSlider:SetWidth(310)
+    sizeSlider:SetMinMaxValues(6, 20)
+    sizeSlider:SetValue(specialFontSettings.ClockText.size / CF_SCALE)
+    sizeSlider:SetValueStep(1)
+    sizeSlider.Text:SetText("字体大小")
+    sizeSlider.Low:SetText("6")
+    sizeSlider.High:SetText("20")
+
+    sizeSlider:SetScript("OnValueChanged", function(self, value)
+        specialFontSettings.ClockText.size = value * CF_SCALE
+        UpdateClockFont()
+        self.valueText:SetText(string.format("%d", value))
+        SaveSettings()
+    end)
+
+    sizeSlider.valueText = clockGroup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    sizeSlider.valueText:SetPoint("TOP", sizeSlider, "BOTTOM", 0, 0)
+    sizeSlider.valueText:SetText(string.format("%d", sizeSlider:GetValue()))
+
+    -- X偏移滑动条
+    local xOffsetSlider = CreateFrame("Slider", nil, clockGroup, "OptionsSliderTemplate")
+    xOffsetSlider:SetPoint("TOPLEFT", 20, -120)
+    xOffsetSlider:SetWidth(140)
+    xOffsetSlider:SetMinMaxValues(-5, 5)
+    xOffsetSlider:SetValue(specialFontSettings.ClockText.xOffset)
+    xOffsetSlider:SetValueStep(0.1)
+    xOffsetSlider.Text:SetText("X轴偏移")
+    xOffsetSlider.Low:SetText("-5")
+    xOffsetSlider.High:SetText("5")
+
+    xOffsetSlider:SetScript("OnValueChanged", function(self, value)
+        specialFontSettings.ClockText.xOffset = value
+        UpdateClockFont()
+        self.valueText:SetText(string.format("%.1f", value))
+        SaveSettings()
+    end)
+
+    xOffsetSlider.valueText = clockGroup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    xOffsetSlider.valueText:SetPoint("TOP", xOffsetSlider, "BOTTOM", 0, 0)
+    xOffsetSlider.valueText:SetText("0.0")
+
+    -- Y偏移滑动条
+    local yOffsetSlider = CreateFrame("Slider", nil, clockGroup, "OptionsSliderTemplate")
+    yOffsetSlider:SetPoint("TOPLEFT", 190, -120)
+    yOffsetSlider:SetWidth(140)
+    yOffsetSlider:SetMinMaxValues(-5, 5)
+    yOffsetSlider:SetValue(specialFontSettings.ClockText.yOffset)
+    yOffsetSlider:SetValueStep(0.1)
+    yOffsetSlider.Text:SetText("Y轴偏移")
+    yOffsetSlider.Low:SetText("-5")
+    yOffsetSlider.High:SetText("5")
+
+    yOffsetSlider:SetScript("OnValueChanged", function(self, value)
+        specialFontSettings.ClockText.yOffset = value
+        UpdateClockFont()
+        self.valueText:SetText(string.format("%.1f", value))
+        SaveSettings()
+    end)
+
+    yOffsetSlider.valueText = clockGroup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    yOffsetSlider.valueText:SetPoint("TOP", yOffsetSlider, "BOTTOM", 0, 0)
+    yOffsetSlider.valueText:SetText("0.0")
+
+    yOffset = yOffset + 180 -- 内容高度
 
     -- 调整内容框架的大小
-    content:SetSize(360, yOffset + 20) -- 根据实际内容调整高度
+    content:SetSize(360, yOffset + 20)
 
     -- 底部按钮样式优化
     local buttonHeight = 25
@@ -770,7 +951,7 @@ ClearFont:RegisterEvent("ADDON_LOADED")
 ClearFont:RegisterEvent("PLAYER_LOGIN")
 ClearFont:RegisterEvent("PLAYER_TARGET_CHANGED")
 
--- Register events
+-- 注册事件
 for event in pairs(eventHandlers) do
     ClearFont:RegisterEvent(event)
 end
@@ -916,6 +1097,9 @@ function ClearFont:UpdateSpecialFonts()
         targetLevel:SetShadowColor(unpack(settings.shadowColor))
         targetLevel:SetShadowOffset(unpack(settings.shadowOffset))
     end
+
+    -- 更新时钟字体
+    UpdateClockFont()
 end
 
 -- =============================================================================
