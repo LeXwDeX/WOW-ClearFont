@@ -431,8 +431,8 @@ end
 
 local function UpdatePlayerLevel()
     if PlayerLevelText then
-        local FONT_X_OFFSET = -0.01
-        local FONT_Y_OFFSET = -0.05
+        local FONT_X_OFFSET = 0
+        local FONT_Y_OFFSET = 0
         PlayerLevelText:SetFont(CLEAR_FONT, 10 * CF_SCALE, "OUTLINE")
         local point, relativeTo, relativePoint, xOfs, yOfs = PlayerLevelText:GetPoint()
         if point then
@@ -444,15 +444,66 @@ local function UpdatePlayerLevel()
 end
 
 local function UpdateTargetLevel()
-    if TargetFrameTextureFrameLevelText then
-        local FONT_X_OFFSET = 2
-        local FONT_Y_OFFSET = -0.16
-        TargetFrameTextureFrameLevelText:SetFont(CLEAR_FONT, 10 * CF_SCALE, "OUTLINE")
-        local point, relativeTo, relativePoint, xOfs, yOfs = TargetFrameTextureFrameLevelText:GetPoint()
-        if point then
-            TargetFrameTextureFrameLevelText:ClearAllPoints()
-            TargetFrameTextureFrameLevelText:SetPoint(point, relativeTo, relativePoint, (xOfs or 0) + FONT_X_OFFSET,
-                (yOfs or 0) + FONT_Y_OFFSET)
+    local targetLevel = TargetFrameTextureFrameLevelText
+    if targetLevel then
+        local settings = specialFontSettings.TargetLevel
+        
+        -- 移除原有的所有脚本
+        targetLevel:SetScript("OnShow", nil)
+        targetLevel:SetScript("OnSizeChanged", nil)
+        
+        -- 设置字体
+        targetLevel:SetFont(settings.font, settings.size, settings.style)
+        
+        -- 使用 SetPoint 的钩子来确保位置始终正确
+        if not targetLevel.hooked then
+            hooksecurefunc(targetLevel, "SetPoint", function(self, ...)
+                if self.isSettingPoint then return end
+                self.isSettingPoint = true
+                
+                -- 保存第一次的原始位置
+                if not settings.originalPos then
+                    local point, relativeTo, relativePoint, xOfs, yOfs = ...
+                    settings.originalPos = {
+                        point = point,
+                        relativeTo = relativeTo,
+                        relativePoint = relativePoint,
+                        xOfs = xOfs or 0,
+                        yOfs = yOfs or 0
+                    }
+                end
+                
+                -- 应用我们的自定义位置
+                if settings.originalPos then
+                    self:ClearAllPoints()
+                    self:SetPoint(
+                        settings.originalPos.point,
+                        settings.originalPos.relativeTo,
+                        settings.originalPos.relativePoint,
+                        settings.originalPos.xOfs + settings.xOffset,
+                        settings.originalPos.yOfs + settings.yOffset
+                    )
+                end
+                
+                self.isSettingPoint = false
+            end)
+            targetLevel.hooked = true
+        end
+        
+        -- 应用阴影设置
+        targetLevel:SetShadowColor(unpack(settings.shadowColor))
+        targetLevel:SetShadowOffset(unpack(settings.shadowOffset))
+        
+        -- 强制更新位置
+        if settings.originalPos then
+            targetLevel:ClearAllPoints()
+            targetLevel:SetPoint(
+                settings.originalPos.point,
+                settings.originalPos.relativeTo,
+                settings.originalPos.relativePoint,
+                settings.originalPos.xOfs + settings.xOffset,
+                settings.originalPos.yOfs + settings.yOffset
+            )
         end
     end
 end
@@ -947,6 +998,8 @@ end)
 
 -- 注册额外的事件
 ClearFont:RegisterEvent("PLAYER_ENTERING_WORLD")
+ClearFont:RegisterEvent("UNIT_LEVEL")
+ClearFont:RegisterEvent("UNIT_TARGET")
 ClearFont:RegisterEvent("ADDON_LOADED")
 ClearFont:RegisterEvent("PLAYER_LOGIN")
 ClearFont:RegisterEvent("PLAYER_TARGET_CHANGED")
