@@ -2,6 +2,7 @@
 --  A. ClearFont 框架和字体配置
 -- =============================================================================
 
+-- 创建 ClearFont 框架
 local ClearFont = CreateFrame("Frame", "ClearFont")
 
 -- 添加保存配置的变量
@@ -443,6 +444,7 @@ local function UpdatePlayerLevel()
     end
 end
 
+-- 更新目标等级(TargetFrameTextureFrameLevelText)为经典版api
 local function UpdateTargetLevel()
     local targetLevel = TargetFrameTextureFrameLevelText
     if targetLevel then
@@ -491,8 +493,8 @@ local function UpdateTargetLevel()
         end
         
         -- 应用阴影设置
-        targetLevel:SetShadowColor(table.unpack(settings.shadowColor))
-        targetLevel:SetShadowOffset(table.unpack(settings.shadowOffset))
+        targetLevel:SetShadowColor(unpack(settings.shadowColor))
+        targetLevel:SetShadowOffset(unpack(settings.shadowOffset))
         
         -- 强制更新位置
         if settings.originalPos then
@@ -1041,8 +1043,8 @@ function ClearFont:UpdateSpecialFonts()
             settings.originalPos.xOfs + settings.xOffset,
             settings.originalPos.yOfs + settings.yOffset
         )
-        playerName:SetShadowColor(table.unpack(settings.shadowColor))
-        playerName:SetShadowOffset(table.unpack(settings.shadowOffset))
+        playerName:SetShadowColor(unpack(settings.shadowColor))
+        playerName:SetShadowOffset(unpack(settings.shadowOffset))
     end
 
     -- 更新玩家等级
@@ -1072,8 +1074,8 @@ function ClearFont:UpdateSpecialFonts()
             settings.originalPos.xOfs + settings.xOffset,
             settings.originalPos.yOfs + settings.yOffset
         )
-        playerLevel:SetShadowColor(table.unpack(settings.shadowColor))
-        playerLevel:SetShadowOffset(table.unpack(settings.shadowOffset))
+        playerLevel:SetShadowColor(unpack(settings.shadowColor))
+        playerLevel:SetShadowOffset(unpack(settings.shadowOffset))
     end
 
     -- 更新目标名字
@@ -1110,8 +1112,8 @@ function ClearFont:UpdateSpecialFonts()
             )
         end
 
-        targetName:SetShadowColor(table.unpack(settings.shadowColor))
-        targetName:SetShadowOffset(table.unpack(settings.shadowOffset))
+        targetName:SetShadowColor(unpack(settings.shadowColor))
+        targetName:SetShadowOffset(unpack(settings.shadowOffset))
     end
 
     -- 更新目标等级
@@ -1147,8 +1149,8 @@ function ClearFont:UpdateSpecialFonts()
             )
         end
 
-        targetLevel:SetShadowColor(table.unpack(settings.shadowColor))
-        targetLevel:SetShadowOffset(table.unpack(settings.shadowOffset))
+        targetLevel:SetShadowColor(unpack(settings.shadowColor))
+        targetLevel:SetShadowOffset(unpack(settings.shadowOffset))
     end
 
     -- 更新时钟字体
