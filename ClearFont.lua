@@ -491,8 +491,8 @@ local function UpdateTargetLevel()
         end
         
         -- 应用阴影设置
-        targetLevel:SetShadowColor(unpack(settings.shadowColor))
-        targetLevel:SetShadowOffset(unpack(settings.shadowOffset))
+        targetLevel:SetShadowColor(table.unpack(settings.shadowColor))
+        targetLevel:SetShadowOffset(table.unpack(settings.shadowOffset))
         
         -- 强制更新位置
         if settings.originalPos then
@@ -1041,8 +1041,8 @@ function ClearFont:UpdateSpecialFonts()
             settings.originalPos.xOfs + settings.xOffset,
             settings.originalPos.yOfs + settings.yOffset
         )
-        playerName:SetShadowColor(unpack(settings.shadowColor))
-        playerName:SetShadowOffset(unpack(settings.shadowOffset))
+        playerName:SetShadowColor(table.unpack(settings.shadowColor))
+        playerName:SetShadowOffset(table.unpack(settings.shadowOffset))
     end
 
     -- 更新玩家等级
@@ -1072,8 +1072,8 @@ function ClearFont:UpdateSpecialFonts()
             settings.originalPos.xOfs + settings.xOffset,
             settings.originalPos.yOfs + settings.yOffset
         )
-        playerLevel:SetShadowColor(unpack(settings.shadowColor))
-        playerLevel:SetShadowOffset(unpack(settings.shadowOffset))
+        playerLevel:SetShadowColor(table.unpack(settings.shadowColor))
+        playerLevel:SetShadowOffset(table.unpack(settings.shadowOffset))
     end
 
     -- 更新目标名字
@@ -1110,8 +1110,8 @@ function ClearFont:UpdateSpecialFonts()
             )
         end
 
-        targetName:SetShadowColor(unpack(settings.shadowColor))
-        targetName:SetShadowOffset(unpack(settings.shadowOffset))
+        targetName:SetShadowColor(table.unpack(settings.shadowColor))
+        targetName:SetShadowOffset(table.unpack(settings.shadowOffset))
     end
 
     -- 更新目标等级
@@ -1147,8 +1147,8 @@ function ClearFont:UpdateSpecialFonts()
             )
         end
 
-        targetLevel:SetShadowColor(unpack(settings.shadowColor))
-        targetLevel:SetShadowOffset(unpack(settings.shadowOffset))
+        targetLevel:SetShadowColor(table.unpack(settings.shadowColor))
+        targetLevel:SetShadowOffset(table.unpack(settings.shadowOffset))
     end
 
     -- 更新时钟字体
