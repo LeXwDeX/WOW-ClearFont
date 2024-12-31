@@ -2,7 +2,6 @@
 --  A. ClearFont 框架和字体配置
 -- =============================================================================
 
--- 创建 ClearFont 框架
 local ClearFont = CreateFrame("Frame", "ClearFont")
 
 -- 添加保存配置的变量
@@ -29,7 +28,7 @@ local function CanSetFont(object)
     local cached = canSetFontCache[object]
     if cached ~= nil then return cached end
     local result = type(object) == "table" and object.SetFont and object.IsObjectType and
-    not object:IsObjectType("SimpleHTML")
+        not object:IsObjectType("SimpleHTML")
     canSetFontCache[object] = result
     return result
 end
@@ -161,7 +160,7 @@ local fontConfigurations = {
     ["FocusFontSmall"] = { font = CLEAR_FONT, size = 15 * CF_SCALE, style = "OUTLINE" },
 
     -- 玩家角色头像被命中指示器
-    ["PlayerHitIndicator"] = { font = "Fonts/ARIALN.ttf", size = 30, style = "OUTLINE" },
+    ["PlayerHitIndicator"] = { font = "Fonts/ARIALN.ttf", size = 30, style = "OUTLINE", shadowColor = { 0, 0, 0, 0.25 }, shadowOffset = { 1, -1 } },
 }
 
 -- 更新时钟字体
@@ -188,7 +187,7 @@ local function UpdateClockFont()
 
                 -- 应用字体设置
                 region:SetFont(settings.font, settings.size, settings.style)
-                
+
                 -- 应用位置设置
                 if settings.originalPos then
                     region:ClearAllPoints()
@@ -309,7 +308,7 @@ local specialFontSettings = {
         font = CLEAR_FONT,
         size = 15 * CF_SCALE,
         style = "OUTLINE",
-        alpha = 1, -- 只保留透明度
+        alpha = 1,
     },
     ClockText = {
         font = CLEAR_FONT,
@@ -413,7 +412,7 @@ local function UpdateClockFont()
 
                 -- 应用字体设置
                 region:SetFont(settings.font, settings.size, settings.style)
-                
+
                 -- 应用位置设置
                 if settings.originalPos then
                     region:ClearAllPoints()
@@ -432,8 +431,8 @@ end
 
 local function UpdatePlayerLevel()
     if PlayerLevelText then
-        local FONT_X_OFFSET = 0
-        local FONT_Y_OFFSET = 0
+        local FONT_X_OFFSET = -0.01
+        local FONT_Y_OFFSET = -0.05
         PlayerLevelText:SetFont(CLEAR_FONT, 10 * CF_SCALE, "OUTLINE")
         local point, relativeTo, relativePoint, xOfs, yOfs = PlayerLevelText:GetPoint()
         if point then
@@ -444,73 +443,21 @@ local function UpdatePlayerLevel()
     end
 end
 
--- 更新目标等级(TargetFrameTextureFrameLevelText)为经典版api
 local function UpdateTargetLevel()
-    local targetLevel = TargetFrameTextureFrameLevelText
-    if targetLevel then
-        local settings = specialFontSettings.TargetLevel
-        
-        -- 移除原有的所有脚本
-        targetLevel:SetScript("OnShow", nil)
-        targetLevel:SetScript("OnSizeChanged", nil)
-        
-        -- 设置字体
-        targetLevel:SetFont(settings.font, settings.size, settings.style)
-        
-        -- 使用 SetPoint 的钩子来确保位置始终正确
-        if not targetLevel.hooked then
-            hooksecurefunc(targetLevel, "SetPoint", function(self, ...)
-                if self.isSettingPoint then return end
-                self.isSettingPoint = true
-                
-                -- 保存第一次的原始位置
-                if not settings.originalPos then
-                    local point, relativeTo, relativePoint, xOfs, yOfs = ...
-                    settings.originalPos = {
-                        point = point,
-                        relativeTo = relativeTo,
-                        relativePoint = relativePoint,
-                        xOfs = xOfs or 0,
-                        yOfs = yOfs or 0
-                    }
-                end
-                
-                -- 应用我们的自定义位置
-                if settings.originalPos then
-                    self:ClearAllPoints()
-                    self:SetPoint(
-                        settings.originalPos.point,
-                        settings.originalPos.relativeTo,
-                        settings.originalPos.relativePoint,
-                        settings.originalPos.xOfs + settings.xOffset,
-                        settings.originalPos.yOfs + settings.yOffset
-                    )
-                end
-                
-                self.isSettingPoint = false
-            end)
-            targetLevel.hooked = true
-        end
-        
-        -- 应用阴影设置
-        targetLevel:SetShadowColor(unpack(settings.shadowColor))
-        targetLevel:SetShadowOffset(unpack(settings.shadowOffset))
-        
-        -- 强制更新位置
-        if settings.originalPos then
-            targetLevel:ClearAllPoints()
-            targetLevel:SetPoint(
-                settings.originalPos.point,
-                settings.originalPos.relativeTo,
-                settings.originalPos.relativePoint,
-                settings.originalPos.xOfs + settings.xOffset,
-                settings.originalPos.yOfs + settings.yOffset
-            )
+    if TargetFrameTextureFrameLevelText then
+        local FONT_X_OFFSET = 2
+        local FONT_Y_OFFSET = -0.16
+        TargetFrameTextureFrameLevelText:SetFont(CLEAR_FONT, 10 * CF_SCALE, "OUTLINE")
+        local point, relativeTo, relativePoint, xOfs, yOfs = TargetFrameTextureFrameLevelText:GetPoint()
+        if point then
+            TargetFrameTextureFrameLevelText:ClearAllPoints()
+            TargetFrameTextureFrameLevelText:SetPoint(point, relativeTo, relativePoint, (xOfs or 0) + FONT_X_OFFSET,
+                (yOfs or 0) + FONT_Y_OFFSET)
         end
     end
 end
 
--- 定义特殊更新表
+-- 定义特殊更新的动作表
 local specialUpdates = {
     {
         update_function = UpdateClockFont,
@@ -972,8 +919,8 @@ end
 --  F. 事件处理和初始化
 -- =============================================================================
 
-ClearFont:SetScript("OnEvent", function(self, event, addon)
-    if event == "ADDON_LOADED" and addon == "ClearFont" then
+ClearFont:SetScript("OnEvent", function(self, event, ...)
+    if event == "ADDON_LOADED" and ... == "ClearFont" then
         LoadSavedSettings()
         print("ClearFont loaded successfully")
         -- 初始化配置界面
@@ -982,16 +929,17 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
         end
     elseif event == "PLAYER_LOGIN" then
         -- 在玩家登录时应用所有字体设置
-        C_Timer.After(0.1, function()
+        C_Timer.After(0, function()
             ClearFont:ApplyFontSettings()
             ClearFont:UpdateSpecialFonts()
         end)
     elseif event == "PLAYER_ENTERING_WORLD" then
-        -- 在进入世界时再次应用设置
-        C_Timer.After(0.1, function()
+        -- 在进入世界时应用设置
+        C_Timer.After(0, function()
             ClearFont:UpdateSpecialFonts()
         end)
-    elseif event == "PLAYER_TARGET_CHANGED" then
+    elseif event == "PLAYER_TARGET_CHANGED" or (event == "UNIT_HEALTH" and ... == "target") then
+        -- 在目标改变或目标血量改变时应用设置
         C_Timer.After(0, function()
             ClearFont:UpdateSpecialFonts()
         end)
@@ -1000,11 +948,12 @@ end)
 
 -- 注册额外的事件
 ClearFont:RegisterEvent("PLAYER_ENTERING_WORLD")
-ClearFont:RegisterEvent("UNIT_LEVEL")
-ClearFont:RegisterEvent("UNIT_TARGET")
 ClearFont:RegisterEvent("ADDON_LOADED")
 ClearFont:RegisterEvent("PLAYER_LOGIN")
 ClearFont:RegisterEvent("PLAYER_TARGET_CHANGED")
+ClearFont:RegisterEvent("UNIT_HEALTH")
+ClearFont:RegisterEvent("UNIT_MODEL_CHANGED")
+ClearFont:RegisterEvent("UNIT_NAME_UPDATE")
 
 -- 注册事件
 for event in pairs(eventHandlers) do
@@ -1085,7 +1034,7 @@ function ClearFont:UpdateSpecialFonts()
 
         -- 仅在第一次时保存原始位置
         if not settings.originalPos then
-            local point, relativeTo, relativePoint, xOfs, yOfs = targetName:GetPoint(1) -- 使用 GetPoint(1) 确保获取第一个锚点
+            local point, relativeTo, relativePoint, xOfs, yOfs = targetName:GetPoint(1) -- 重要：使用 GetPoint(1) 确保获取第一个锚点
             if point then
                 settings.originalPos = {
                     point = point,
