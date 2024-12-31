@@ -10,7 +10,7 @@ ClearFontDB = ClearFontDB or {}
 -- 字体配置
 local CLEAR_FONT_BASE = "Fonts/"
 local CLEAR_FONT = CLEAR_FONT_BASE .. "ARKai_T.TTF"
-local CLEAR_FONT_ZDSZ = CLEAR_FONT_BASE .. "YHSZ.ttf"
+-- local CLEAR_FONT_ZDSZ = CLEAR_FONT_BASE .. "YHSZ.ttf"
 local CLEAR_FONT_NUMBER = CLEAR_FONT_BASE .. "RIZQT_.TTF"
 local CLEAR_FONT_EXP = CLEAR_FONT_BASE .. "ARIALN.TTF"
 local CLEAR_FONT_QUEST = CLEAR_FONT_BASE .. "ARIALN.TTF"
@@ -365,6 +365,34 @@ local function LoadSavedSettings()
             end
         end
     end
+    
+    -- 如果配置界面已经存在，更新所有控件的显示值
+    if ClearFontConfig then
+        -- 更新所有元素的滑动条值和文本
+        for _, element in ipairs({
+            "PlayerName", "PlayerLevel", "TargetName", "TargetLevel", "ClockText"
+        }) do
+            local xSlider = _G["ClearFont_" .. element .. "_XOffset"]
+            local ySlider = _G["ClearFont_" .. element .. "_YOffset"]
+            
+            if xSlider then
+                local xValue = specialFontSettings[element].xOffset
+                xSlider:SetValue(xValue)
+                if xSlider.valueText then
+                    xSlider.valueText:SetText(string.format("%.1f", xValue))
+                end
+            end
+            
+            if ySlider then
+                local yValue = specialFontSettings[element].yOffset
+                ySlider:SetValue(yValue)
+                if ySlider.valueText then
+                    ySlider.valueText:SetText(string.format("%.1f", yValue))
+                end
+            end
+        end
+    end
+    
     UpdateActionBarFonts()
     UpdateClockFont()
 end
@@ -599,51 +627,53 @@ local function CreateConfigUI()
         sizeSlider.valueText:SetText(string.format("%.0f", sizeSlider:GetValue()))
 
         -- X偏移滑动条
-        local xOffsetSlider = CreateFrame("Slider", nil, groupFrame, "OptionsSliderTemplate")
+        local xOffsetSlider = CreateFrame("Slider", "ClearFont_" .. element.key .. "_XOffset", groupFrame, "OptionsSliderTemplate")
         xOffsetSlider:SetPoint("TOPLEFT", 20, -140)
         xOffsetSlider:SetWidth(140)
         xOffsetSlider:SetMinMaxValues(-5, 5)
-        xOffsetSlider:SetValue(0)
-        xOffsetSlider:SetValueStep(0.01)
+        xOffsetSlider:SetValueStep(0.1)
         xOffsetSlider.Text:SetText("X轴偏移")
         xOffsetSlider.Low:SetText("-5")
         xOffsetSlider.High:SetText("5")
-
+        
         -- 创建数值显示
         xOffsetSlider.valueText = groupFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         xOffsetSlider.valueText:SetPoint("TOP", xOffsetSlider, "BOTTOM", 0, 0)
-        xOffsetSlider.valueText:SetText("0.00")
-
-        -- 设置值变化时的处理
+        
+        -- 设置初始值和显示
+        local xValue = specialFontSettings[element.key].xOffset
+        xOffsetSlider:SetValue(xValue)
+        xOffsetSlider.valueText:SetText(string.format("%.1f", xValue))
+        
         xOffsetSlider:SetScript("OnValueChanged", function(self, value)
-            local settings = specialFontSettings[element.key]
-            settings.xOffset = value
-            self.valueText:SetText(string.format("%.2f", value))
+            specialFontSettings[element.key].xOffset = value
+            self.valueText:SetText(string.format("%.1f", value))
             ClearFont:UpdateSpecialFonts()
             SaveSettings()
         end)
-
+        
         -- Y偏移滑动条
-        local yOffsetSlider = CreateFrame("Slider", nil, groupFrame, "OptionsSliderTemplate")
+        local yOffsetSlider = CreateFrame("Slider", "ClearFont_" .. element.key .. "_YOffset", groupFrame, "OptionsSliderTemplate")
         yOffsetSlider:SetPoint("TOPLEFT", 190, -140)
         yOffsetSlider:SetWidth(140)
         yOffsetSlider:SetMinMaxValues(-5, 5)
-        yOffsetSlider:SetValue(0)
-        yOffsetSlider:SetValueStep(0.01)
+        yOffsetSlider:SetValueStep(0.1)
         yOffsetSlider.Text:SetText("Y轴偏移")
         yOffsetSlider.Low:SetText("-5")
         yOffsetSlider.High:SetText("5")
-
+        
         -- 创建数值显示
         yOffsetSlider.valueText = groupFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         yOffsetSlider.valueText:SetPoint("TOP", yOffsetSlider, "BOTTOM", 0, 0)
-        yOffsetSlider.valueText:SetText("0.00")
-
-        -- 设置值变化时的处理
+        
+        -- 设置初始值和显示
+        local yValue = specialFontSettings[element.key].yOffset
+        yOffsetSlider:SetValue(yValue)
+        yOffsetSlider.valueText:SetText(string.format("%.1f", yValue))
+        
         yOffsetSlider:SetScript("OnValueChanged", function(self, value)
-            local settings = specialFontSettings[element.key]
-            settings.yOffset = value
-            self.valueText:SetText(string.format("%.2f", value))
+            specialFontSettings[element.key].yOffset = value
+            self.valueText:SetText(string.format("%.1f", value))
             ClearFont:UpdateSpecialFonts()
             SaveSettings()
         end)
@@ -825,48 +855,49 @@ local function CreateConfigUI()
     sizeSlider.valueText:SetText(string.format("%d", sizeSlider:GetValue()))
 
     -- X偏移滑动条
-    local xOffsetSlider = CreateFrame("Slider", nil, clockGroup, "OptionsSliderTemplate")
+    local xOffsetSlider = CreateFrame("Slider", "ClearFont_ClockText_XOffset", clockGroup, "OptionsSliderTemplate")
     xOffsetSlider:SetPoint("TOPLEFT", 20, -120)
     xOffsetSlider:SetWidth(140)
     xOffsetSlider:SetMinMaxValues(-5, 5)
-    xOffsetSlider:SetValue(specialFontSettings.ClockText.xOffset)
     xOffsetSlider:SetValueStep(0.1)
     xOffsetSlider.Text:SetText("X轴偏移")
     xOffsetSlider.Low:SetText("-5")
     xOffsetSlider.High:SetText("5")
-
+    xOffsetSlider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
     xOffsetSlider:SetScript("OnValueChanged", function(self, value)
         specialFontSettings.ClockText.xOffset = value
-        UpdateClockFont()
         self.valueText:SetText(string.format("%.1f", value))
+        UpdateClockFont()
         SaveSettings()
     end)
 
     xOffsetSlider.valueText = clockGroup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     xOffsetSlider.valueText:SetPoint("TOP", xOffsetSlider, "BOTTOM", 0, 0)
-    xOffsetSlider.valueText:SetText("0.0")
+    xOffsetSlider.valueText:SetText(string.format("%.1f", specialFontSettings.ClockText.xOffset))
 
     -- Y偏移滑动条
-    local yOffsetSlider = CreateFrame("Slider", nil, clockGroup, "OptionsSliderTemplate")
+    local yOffsetSlider = CreateFrame("Slider", "ClearFont_ClockText_YOffset", clockGroup, "OptionsSliderTemplate")
     yOffsetSlider:SetPoint("TOPLEFT", 190, -120)
     yOffsetSlider:SetWidth(140)
     yOffsetSlider:SetMinMaxValues(-5, 5)
-    yOffsetSlider:SetValue(specialFontSettings.ClockText.yOffset)
     yOffsetSlider:SetValueStep(0.1)
     yOffsetSlider.Text:SetText("Y轴偏移")
     yOffsetSlider.Low:SetText("-5")
     yOffsetSlider.High:SetText("5")
-
+    
+    -- 确保设置滑动条的操作杆纹理
+    yOffsetSlider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
+    
     yOffsetSlider:SetScript("OnValueChanged", function(self, value)
         specialFontSettings.ClockText.yOffset = value
-        UpdateClockFont()
         self.valueText:SetText(string.format("%.1f", value))
+        UpdateClockFont()
         SaveSettings()
     end)
 
     yOffsetSlider.valueText = clockGroup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     yOffsetSlider.valueText:SetPoint("TOP", yOffsetSlider, "BOTTOM", 0, 0)
-    yOffsetSlider.valueText:SetText("0.0")
+    yOffsetSlider.valueText:SetText(string.format("%.1f", specialFontSettings.ClockText.yOffset))
 
     yOffset = yOffset + 180 -- 内容高度
 
@@ -911,6 +942,19 @@ local function CreateConfigUI()
     applyButton:SetScript("OnClick", function()
         ClearFont:UpdateSpecialFonts()
     end)
+
+    -- 更新样式下拉菜单的显示文本
+    local currentStyle = specialFontSettings.ClockText.style
+    for _, style in ipairs(fontStyles) do
+        if style[2] == currentStyle then
+            UIDropDownMenu_SetText(styleDropdown, style[1])
+            break
+        end
+    end
+
+    -- 确保在创建时设置正确的初始值
+    xOffsetSlider.valueText:SetText(string.format("%.1f", specialFontSettings.ClockText.xOffset))
+    yOffsetSlider.valueText:SetText(string.format("%.1f", specialFontSettings.ClockText.yOffset))
 
     return frame
 end
