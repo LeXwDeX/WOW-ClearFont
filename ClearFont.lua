@@ -943,6 +943,9 @@ ClearFont:SetScript("OnEvent", function(self, event, ...)
         C_Timer.After(0, function()
             ClearFont:UpdateSpecialFonts()
         end)
+    elseif event == "PLAYER_LOGOUT" then
+        -- 添加登出时保存
+        SaveSettings()
     end
 end)
 
@@ -954,11 +957,15 @@ ClearFont:RegisterEvent("PLAYER_TARGET_CHANGED")
 ClearFont:RegisterEvent("UNIT_HEALTH")
 ClearFont:RegisterEvent("UNIT_MODEL_CHANGED")
 ClearFont:RegisterEvent("UNIT_NAME_UPDATE")
+ClearFont:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
 
 -- 注册事件
 for event in pairs(eventHandlers) do
     ClearFont:RegisterEvent(event)
 end
+
+-- 添加更多相关事件
+
 
 -- =============================================================================
 --  G. 特殊UI元素更新函数
@@ -1104,6 +1111,9 @@ function ClearFont:UpdateSpecialFonts()
 
     -- 更新时钟字体
     UpdateClockFont()
+    
+    -- 添加保存
+    SaveSettings()
 end
 
 -- =============================================================================
@@ -1117,3 +1127,6 @@ SlashCmdList["CLEARFONT"] = function(msg)
     end
     ClearFontConfig:SetShown(not ClearFontConfig:IsShown())
 end
+
+-- 注册登出事件
+ClearFont:RegisterEvent("PLAYER_LOGOUT")
