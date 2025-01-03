@@ -4,9 +4,6 @@
 
 local ClearFont = CreateFrame("Frame", "ClearFont")
 
--- 添加保存配置的变量
-ClearFontDB = ClearFontDB or {}
-
 -- 字体配置
 local CLEAR_FONT_BASE = "Fonts/"
 local CLEAR_FONT = CLEAR_FONT_BASE .. "ARKai_T.TTF"
@@ -39,14 +36,14 @@ local function CanSetFont(object)
 end
 
 -- 字体样式配置
-local fontStyles = {
-    { "普通", "" },
-    { "轮廓", "OUTLINE" },
-    { "厚轮廓", "THICKOUTLINE" },
-    { "单色", "MONOCHROME" },
-    { "单色轮廓", "MONOCHROME,OUTLINE" },
-    { "单色厚轮廓", "MONOCHROME,THICKOUTLINE" }
-}
+-- local fontStyles = {
+--     { "普通", "" },
+--     { "轮廓", "OUTLINE" },
+--     { "厚轮廓", "THICKOUTLINE" },
+--     { "单色", "MONOCHROME" },
+--     { "单色轮廓", "MONOCHROME,OUTLINE" },
+--     { "单色厚轮廓", "MONOCHROME,THICKOUTLINE" }
+-- }
 
 -- 字体配置
 local fontConfigurations = {
@@ -175,22 +172,26 @@ local fontConfigurations = {
 -- =============================================================================
 
 function ClearFont:ApplyFontSettings()
-    -- 应用字体到字体对象
     for fontName, settings in pairs(fontConfigurations) do
-        local fontObject = _G[fontName]
-        if fontObject and type(settings) == "table" and settings.font and settings.size then
-            if CanSetFont(fontObject) then
-                fontObject:SetFont(settings.font, settings.size, settings.style)
-                if settings.color then
-                    fontObject:SetTextColor(unpack(settings.color))
-                end
-                if settings.shadowColor then
-                    fontObject:SetShadowColor(unpack(settings.shadowColor))
-                end
-                if settings.shadowOffset then
-                    fontObject:SetShadowOffset(unpack(settings.shadowOffset))
+        local success, err = pcall(function()
+            local fontObject = _G[fontName]
+            if fontObject and type(settings) == "table" and settings.font and settings.size then
+                if CanSetFont(fontObject) then
+                    fontObject:SetFont(settings.font, settings.size, settings.style)
+                    if settings.color then
+                        fontObject:SetTextColor(unpack(settings.color))
+                    end
+                    if settings.shadowColor then
+                        fontObject:SetShadowColor(unpack(settings.shadowColor))
+                    end
+                    if settings.shadowOffset then
+                        fontObject:SetShadowOffset(unpack(settings.shadowOffset))
+                    end
                 end
             end
+        end)
+        if not success then
+            print("|cFFFF0000ClearFont Error|r: Failed to apply settings for " .. fontName .. ": " .. err)
         end
     end
 
@@ -236,7 +237,6 @@ local specialFontSettings = {
         style = "OUTLINE",
         xOffset = 0,
         yOffset = 0,
-        originalPos = nil,
         shadowColor = { 0, 0, 0, 1 },
         shadowOffset = { 1, -1 }
     },
@@ -246,7 +246,6 @@ local specialFontSettings = {
         style = "OUTLINE",
         xOffset = 0,
         yOffset = 0,
-        originalPos = nil,
         shadowColor = { 0, 0, 0, 1 },
         shadowOffset = { 1, -1 }
     },
@@ -256,7 +255,6 @@ local specialFontSettings = {
         style = "OUTLINE",
         xOffset = 0,
         yOffset = 0,
-        originalPos = nil,
         shadowColor = { 0, 0, 0, 1 },
         shadowOffset = { 1, -1 }
     },
@@ -266,7 +264,6 @@ local specialFontSettings = {
         style = "OUTLINE",
         xOffset = 0,
         yOffset = 0,
-        originalPos = nil,
         shadowColor = { 0, 0, 0, 1 },
         shadowOffset = { 1, -1 }
     },
@@ -282,7 +279,6 @@ local specialFontSettings = {
         style = "",
         xOffset = 0,
         yOffset = 0,
-        originalPos = nil,
         shadowColor = { 0, 0, 0, 1 },
         shadowOffset = { 1, -1 }
     },
@@ -295,29 +291,14 @@ local fontHooks = {
         settings = specialFontSettings.PlayerName,
         apply = function(element, settings)
             if not element then return end
-            
-            -- 保存原始位置
-            if not settings.originalPos then
-                local point, relativeTo, relativePoint, xOfs, yOfs = element:GetPoint()
-                settings.originalPos = {
-                    point = point,
-                    relativeTo = relativeTo,
-                    relativePoint = relativePoint,
-                    xOfs = xOfs or 0,
-                    yOfs = yOfs or 0
-                }
-            end
-
-            -- 应用字体设置
             element:SetFont(settings.font, settings.size, settings.style)
-            element:ClearAllPoints()
-            element:SetPoint(
-                settings.originalPos.point,
-                settings.originalPos.relativeTo,
-                settings.originalPos.relativePoint,
-                settings.originalPos.xOfs + settings.xOffset,
-                settings.originalPos.yOfs + settings.yOffset
-            )
+            local point, relativeTo, relativePoint, xOfs, yOfs = element:GetPoint()
+            if point then
+                element:ClearAllPoints()
+                element:SetPoint(point, relativeTo, relativePoint, 
+                    (xOfs or 0) + settings.xOffset,
+                    (yOfs or 0) + settings.yOffset)
+            end
             element:SetShadowColor(unpack(settings.shadowColor))
             element:SetShadowOffset(unpack(settings.shadowOffset))
         end
@@ -327,23 +308,63 @@ local fontHooks = {
         element = function() return PlayerLevelText end,
         settings = specialFontSettings.PlayerLevel,
         apply = function(element, settings)
-            -- 类似 PlayerName 的实现
+            element:SetFont(settings.font, settings.size, settings.style)
+            local point, relativeTo, relativePoint, xOfs, yOfs = element:GetPoint()
+            if point then
+                element:ClearAllPoints()
+                element:SetPoint(point, relativeTo, relativePoint, 
+                    (xOfs or 0) + settings.xOffset,
+                    (yOfs or 0) + settings.yOffset)
+            end
+            element:SetShadowColor(unpack(settings.shadowColor))
+            element:SetShadowOffset(unpack(settings.shadowOffset))
         end
     },
     
     TargetName = {
-        element = function() return TargetFrame.name end,
+        element = function() 
+            return TargetFrame.TargetFrameContent.TargetFrameContentMain.Name
+        end,
         settings = specialFontSettings.TargetName,
         apply = function(element, settings)
-            -- 类似 PlayerName 的实现
+            if not element then return end
+            
+            -- 应用字体设置
+            element:SetFont(settings.font, settings.size, settings.style)
+            
+            -- 应用阴影设置
+            if settings.shadowColor then
+                element:SetShadowColor(unpack(settings.shadowColor))
+            end
+            if settings.shadowOffset then
+                element:SetShadowOffset(unpack(settings.shadowOffset))
+            end
+            
+            -- 应用位置设置
+            local point, relativeTo, relativePoint, xOfs, yOfs = element:GetPoint()
+            if point then
+                element:ClearAllPoints()
+                element:SetPoint(point, relativeTo, relativePoint, 
+                    (xOfs or 0) + settings.xOffset,
+                    (yOfs or 0) + settings.yOffset)
+            end
         end
     },
     
     TargetLevel = {
-        element = function() return TargetFrameTextureFrameLevelText end,
+        element = function() return GetTargetFrameLevelText() end,
         settings = specialFontSettings.TargetLevel,
         apply = function(element, settings)
-            -- 类似 PlayerName 的实现
+            element:SetFont(settings.font, settings.size, settings.style)
+            local point, relativeTo, relativePoint, xOfs, yOfs = element:GetPoint()
+            if point then
+                element:ClearAllPoints()
+                element:SetPoint(point, relativeTo, relativePoint, 
+                    (xOfs or 0) + settings.xOffset,
+                    (yOfs or 0) + settings.yOffset)
+            end
+            element:SetShadowColor(unpack(settings.shadowColor))
+            element:SetShadowOffset(unpack(settings.shadowOffset))
         end
     },
     
@@ -360,15 +381,23 @@ local fontHooks = {
         end,
         settings = specialFontSettings.ClockText,
         apply = function(element, settings)
-            -- 时钟特殊实现
+            element:SetFont(settings.font, settings.size, settings.style)
+            local point, relativeTo, relativePoint, xOfs, yOfs = element:GetPoint()
+            if point then
+                element:ClearAllPoints()
+                element:SetPoint(point, relativeTo, relativePoint, 
+                    (xOfs or 0) + settings.xOffset,
+                    (yOfs or 0) + settings.yOffset)
+            end
+            element:SetShadowColor(unpack(settings.shadowColor))
+            element:SetShadowOffset(unpack(settings.shadowOffset))
         end
     },
     
     ActionHotkey = {
-        element = function() return true end, -- 特殊处理，返回true表示需要处理
+        element = function() return true end,
         settings = specialFontSettings.ActionHotkey,
         apply = function(_, settings)
-            -- 动作条特殊实现
             local actionBars = {
                 "ActionButton",
                 "MultiBarBottomLeftButton",
@@ -401,43 +430,12 @@ local fontHooks = {
 }
 
 -- 统一的特殊字体更新函数
+local throttleTimer = nil
 function ClearFont:UpdateSpecialFonts()
     for hookName, hook in pairs(fontHooks) do
         local element = hook.element()
         if element then
             hook.apply(element, hook.settings)
-        end
-    end
-    SaveSettings()
-end
-
-local function LoadSavedSettings()
-    if ClearFontDB.fontSettings then
-        for key, savedSettings in pairs(ClearFontDB.fontSettings) do
-            if specialFontSettings[key] then
-                for setting, value in pairs(savedSettings) do
-                    specialFontSettings[key][setting] = value
-                end
-            end
-        end
-    end
-    
-    -- 直接更新字体
-    UpdateActionBarFonts()
-    UpdateClockFont()
-end
-
--- 在设置更改的地方添加保存函数
-local function SaveSettings()
-    ClearFontDB.fontSettings = ClearFontDB.fontSettings or {}
-    -- 保存所有特殊字体设置
-    for key, settings in pairs(specialFontSettings) do
-        ClearFontDB.fontSettings[key] = ClearFontDB.fontSettings[key] or {}
-        for setting, value in pairs(settings) do
-            -- 只保存需要的设置，跳过原始位置
-            if setting ~= "originalPos" then
-                ClearFontDB.fontSettings[key][setting] = value
-            end
         end
     end
 end
@@ -449,39 +447,27 @@ end
 -- 定义特殊UI元素的更新函数
 local function UpdateClockFont()
     local clockButton = _G["TimeManagerClockButton"]
-    if clockButton then
-        local settings = specialFontSettings.ClockText
-        local regions = { clockButton:GetRegions() }
-        for _, region in ipairs(regions) do
-            if region:GetObjectType() == "FontString" then
-                -- 保存原始位置（如果还没有保存）
-                if not settings.originalPos then
-                    local point, relativeTo, relativePoint, xOfs, yOfs = region:GetPoint()
-                    if point then
-                        settings.originalPos = {
-                            point = point,
-                            relativeTo = relativeTo,
-                            relativePoint = relativePoint,
-                            xOfs = xOfs or 0,
-                            yOfs = yOfs or 0
-                        }
-                    end
-                end
-
-                -- 应用字体设置
-                region:SetFont(settings.font, settings.size, settings.style)
-
-                -- 应用位置设置
-                if settings.originalPos then
-                    region:ClearAllPoints()
-                    region:SetPoint(
-                        settings.originalPos.point,
-                        settings.originalPos.relativeTo,
-                        settings.originalPos.relativePoint,
-                        settings.originalPos.xOfs + settings.xOffset,
-                        settings.originalPos.yOfs + settings.yOffset
-                    )
-                end
+    if not clockButton then return end
+    
+    local regions = { clockButton:GetRegions() }
+    for _, region in ipairs(regions) do
+        if region:GetObjectType() == "FontString" then
+            local settings = specialFontSettings.ClockText
+            region:SetFont(settings.font, settings.size, settings.style)
+            
+            local point, relativeTo, relativePoint, xOfs, yOfs = region:GetPoint()
+            if point then
+                region:ClearAllPoints()
+                region:SetPoint(point, relativeTo, relativePoint, 
+                    (xOfs or 0) + (settings.xOffset or 0),
+                    (yOfs or 0) + (settings.yOffset or 0))
+            end
+            
+            if settings.shadowColor then
+                region:SetShadowColor(unpack(settings.shadowColor))
+            end
+            if settings.shadowOffset then
+                region:SetShadowOffset(unpack(settings.shadowOffset))
             end
         end
     end
@@ -515,6 +501,11 @@ local function UpdateTargetLevel()
     end
 end
 
+local function UpdateActionBarFonts()
+    local settings = specialFontSettings.ActionHotkey
+    fontHooks.ActionHotkey.apply(nil, settings)
+end
+
 -- 定义特殊更新的动作表
 local specialUpdates = {
     {
@@ -541,22 +532,30 @@ local specialUpdates = {
 
 -- 构建事件处理程序表
 local eventHandlers = {}
-for _, updateInfo in ipairs(specialUpdates) do
-    for _, event in ipairs(updateInfo.events) do
-        eventHandlers[event] = eventHandlers[event] or {}
-        table.insert(eventHandlers[event], updateInfo)
+local function InitializeEvents()
+    local registeredEvents = {}
+    
+    -- 从 specialUpdates 收集事件
+    for _, updateInfo in ipairs(specialUpdates) do
+        for _, event in ipairs(updateInfo.events) do
+            if not registeredEvents[event] then
+                ClearFont:RegisterEvent(event)
+                registeredEvents[event] = true
+            end
+        end
     end
 end
+
+-- 移除重复的事件注册代码
+-- 在初始化时调用
+InitializeEvents()
 
 -- =============================================================================
 --  F. 事件处理和初始化
 -- =============================================================================
 
 ClearFont:SetScript("OnEvent", function(self, event, ...)
-    if event == "ADDON_LOADED" and ... == "ClearFont" then
-        LoadSavedSettings()
-        print("ClearFont loaded successfully")
-    elseif event == "PLAYER_LOGIN" then
+    if event == "PLAYER_LOGIN" then
         -- 在玩家登录时应用所有字体设置
         C_Timer.After(0, function()
             ClearFont:ApplyFontSettings()
@@ -572,12 +571,8 @@ ClearFont:SetScript("OnEvent", function(self, event, ...)
         C_Timer.After(0, function()
             ClearFont:UpdateSpecialFonts()
         end)
-    elseif event == "PLAYER_LOGOUT" then
-        -- 添加登出时保存
-        SaveSettings()
     end
 end)
-
 -- 移除重复的事件注册，统一使用 eventHandlers
 local events = {
     "PLAYER_ENTERING_WORLD",
