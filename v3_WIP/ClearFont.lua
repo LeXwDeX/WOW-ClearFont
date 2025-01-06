@@ -80,6 +80,8 @@ local fontConfigurations = {
     ["GroupFinderFrameGroupButton1Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
     ["GroupFinderFrameGroupButton2Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
     ["GroupFinderFrameGroupButton3Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+    -- 目标等级数字
+    ["TargetFrame.TargetFrameContent.TargetFrameContentMain.LevelText"] = { font = CLEAR_FONT, size =  10 * CF_SCALE, style = "OUTLINE", offset = { x = 0, y = -1} },
 }
 
 -- =============================================================================
@@ -99,6 +101,21 @@ local delayedFontConfigs = {
 -- =============================================================================
 local isApplying = false -- 防止递归调用
 
+-- 添加一个工具函数来获取嵌套对象
+local function GetNestedObject(path)
+    local parts = {strsplit(".", path)}
+    local obj = _G[parts[1]]
+    
+    if not obj then return nil end
+    
+    for i = 2, #parts do
+        obj = obj[parts[i]]
+        if not obj then return nil end
+    end
+    
+    return obj
+end
+
 local function HookFontFunctions()
     -- Hook SetFont方法
     local function HookSetFont(object)
@@ -110,7 +127,14 @@ local function HookFontFunctions()
                 end
                 -- 查找对应的配置
                 for fontName, settings in pairs(fontConfigurations) do
-                    if self == _G[fontName] then
+                    local fontObject
+                    if string.find(fontName, "%.") then
+                        fontObject = GetNestedObject(fontName)
+                    else
+                        fontObject = _G[fontName]
+                    end
+                    
+                    if self == fontObject then
                         return originalSetFont(self, settings.font, settings.size, settings.style)
                     end
                 end
@@ -131,7 +155,14 @@ local function HookFontFunctions()
                 local result = originalSetFontObject(self, fontObject)
                 if type(fontObject) == "table" and fontObject.GetFont then
                     for fontName, settings in pairs(fontConfigurations) do
-                        if self == _G[fontName] then
+                        local targetObject
+                        if string.find(fontName, "%.") then
+                            targetObject = GetNestedObject(fontName)
+                        else
+                            targetObject = _G[fontName]
+                        end
+                        
+                        if self == targetObject then
                             self:SetFont(settings.font, settings.size, settings.style)
                             break
                         end
@@ -145,7 +176,13 @@ local function HookFontFunctions()
 
     -- 遍历并Hook所有字体对象
     for fontName, _ in pairs(fontConfigurations) do
-        local fontObject = _G[fontName]
+        local fontObject
+        if string.find(fontName, "%.") then
+            fontObject = GetNestedObject(fontName)
+        else
+            fontObject = _G[fontName]
+        end
+        
         if fontObject then
             if fontObject.SetFont then HookSetFont(fontObject) end
             if fontObject.SetFontObject then HookSetFontObject(fontObject) end
@@ -161,12 +198,31 @@ function ClearFont:ApplyFontSettings()
 
     -- 应用常规字体配置
     for fontName, settings in pairs(fontConfigurations) do
-        local fontObject = _G[fontName]
+        local fontObject
+        if string.find(fontName, "%.") then
+            -- 处理带点号的路径
+            fontObject = GetNestedObject(fontName)
+        else
+            -- 处理普通的全局对象
+            fontObject = _G[fontName]
+        end
+
         if fontObject then
             if fontObject.SetFont then
                 fontObject:SetFont(settings.font, settings.size, settings.style)
                 if settings.color then
                     fontObject:SetTextColor(unpack(settings.color))
+                end
+                -- offset 处理逻辑
+                if settings.offset then
+                    -- 获取当前的所有锚点信息
+                    local numPoints = fontObject:GetNumPoints()
+                    if numPoints > 0 then
+                        -- 只调整第一个锚点的偏移量
+                        local point, relativeTo, relativePoint, xOfs, yOfs = fontObject:GetPoint(1)
+                        fontObject:SetPoint(point, relativeTo, relativePoint, 
+                            xOfs + (settings.offset.x or 0), yOfs + (settings.offset.y or 0))
+                    end
                 end
             end
         end
