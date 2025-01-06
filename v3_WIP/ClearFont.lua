@@ -80,8 +80,11 @@ local fontConfigurations = {
     ["GroupFinderFrameGroupButton1Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
     ["GroupFinderFrameGroupButton2Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
     ["GroupFinderFrameGroupButton3Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
-    -- 目标等级数字
-    ["TargetFrame.TargetFrameContent.TargetFrameContentMain.LevelText"] = { font = CLEAR_FONT, size =  10 * CF_SCALE, style = "OUTLINE", offset = { x = 0, y = -1} },
+
+    -- 玩家和目标姓名以及等级数字
+    ["PlayerLevelText"] = { font = CLEAR_FONT, size =  12 * CF_SCALE, style = "OUTLINE"},
+    ["TargetFrame.TargetFrameContent.TargetFrameContentMain.Name"] = { font = CLEAR_FONT, size =  12 * CF_SCALE, style = "OUTLINE", offset = { x = 1, y = -1 }},
+    ["TargetFrame.TargetFrameContent.TargetFrameContentMain.LevelText"] = { font = CLEAR_FONT, size =  12 * CF_SCALE, style = "OUTLINE", offset = { x = 1, y = -1} },
 }
 
 -- =============================================================================
@@ -105,14 +108,11 @@ local isApplying = false -- 防止递归调用
 local function GetNestedObject(path)
     local parts = {strsplit(".", path)}
     local obj = _G[parts[1]]
-    
     if not obj then return nil end
-    
     for i = 2, #parts do
         obj = obj[parts[i]]
         if not obj then return nil end
     end
-    
     return obj
 end
 
@@ -125,6 +125,7 @@ local function HookFontFunctions()
                 if isApplying then
                     return originalSetFont(self, font, size, flags)
                 end
+                
                 -- 查找对应的配置
                 for fontName, settings in pairs(fontConfigurations) do
                     local fontObject
@@ -135,7 +136,10 @@ local function HookFontFunctions()
                     end
                     
                     if self == fontObject then
-                        return originalSetFont(self, settings.font, settings.size, settings.style)
+                        isApplying = true
+                        local result = originalSetFont(self, settings.font, settings.size, settings.style)
+                        isApplying = false
+                        return result
                     end
                 end
                 return originalSetFont(self, font, size, flags)
@@ -152,6 +156,7 @@ local function HookFontFunctions()
                 if isApplying then
                     return originalSetFontObject(self, fontObject)
                 end
+                
                 local result = originalSetFontObject(self, fontObject)
                 if type(fontObject) == "table" and fontObject.GetFont then
                     for fontName, settings in pairs(fontConfigurations) do
@@ -163,7 +168,9 @@ local function HookFontFunctions()
                         end
                         
                         if self == targetObject then
+                            isApplying = true
                             self:SetFont(settings.font, settings.size, settings.style)
+                            isApplying = false
                             break
                         end
                     end
