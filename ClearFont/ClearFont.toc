@@ -1,4 +1,4 @@
-## Interface: 100200
+## Interface: 111000
 ## Title: ClearFont
 ## Notes: 字体美化插件
 ## Author: Ironvalor-白银之手

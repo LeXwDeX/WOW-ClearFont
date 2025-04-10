@@ -1,10 +1,12 @@
-# ClearFont
+# ClearFont(v3)
 
 ## 简介
 
-参考了ClearFont早期的版本（主要是看调整了哪些字体）这个版本完全重构了代码逻辑，加载逻辑，增加了因网友要求的部分修改的界面配置。
+本插件与早期台服网友撰写的ClearFont思路相同，参考了相关插件修改的字体对象。
 
+v3版在原始代码基础上进行了完全重构，使用Hook，延迟加载等逻辑适配正式服的各类情况，并根据网游的一些要求做了字体的大小和位置微调。
 
+## 建议
 
 强烈推荐使用：[lxgw/LxgwWenKai: An open-source Chinese font derived from Fontworks' Klee One. 一款开源中文字体，基于 FONTWORKS 出品字体 Klee One 衍生。 (github.com)](https://github.com/lxgw/LxgwWenKai) 作为魔兽世界的主要字体，该字体清晰，比原生客户端的字体要好看，Y轴距离合理，并且适配游戏也不突兀。
 
@@ -13,3 +15,4 @@
 1. 修正了部分函数异常，可以支持10.0/11.0客户端。
 2. 代码完全重构
 3. 部分API只针对怀旧服做适配，正式服应该不需要所以没有管
+4. v3版本调整上线
