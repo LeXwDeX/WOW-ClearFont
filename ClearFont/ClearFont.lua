@@ -101,6 +101,178 @@ local delayedFontConfigs = {
 }
 
 -- =============================================================================
+--  资源中文名称映射与工具
+-- =============================================================================
+local resourceNameZh = {
+    -- 主游戏字体
+    ["GameFontNormal"] = "游戏字体-普通",
+    ["GameFontHighlight"] = "游戏字体-高亮",
+    ["GameFontNormalMed3"] = "游戏字体-中号",
+    ["GameFontDisable"] = "游戏字体-禁用",
+    ["GameFontGreen"] = "游戏字体-绿色",
+    ["GameFontRed"] = "游戏字体-红色",
+    ["GameFontBlack"] = "游戏字体-黑色",
+    ["GameFontWhite"] = "游戏字体-白色",
+
+    -- 小字体
+    ["GameFontNormalSmall"] = "小字体-普通",
+    ["GameFontHighlightSmall"] = "小字体-高亮",
+    ["GameFontHighlightSmallOutline"] = "小字体-高亮描边",
+    ["GameFontDisableSmall"] = "小字体-禁用",
+    ["GameFontDarkGraySmall"] = "小字体-深灰",
+    ["GameFontGreenSmall"] = "小字体-绿色",
+    ["GameFontRedSmall"] = "小字体-红色",
+    ["GameFontHighlightExtraSmall"] = "超小字体-高亮",
+
+    -- 大/超大字体
+    ["GameFontDisableLarge"] = "大字体-禁用",
+    ["GameFontGreenLarge"] = "大字体-绿色",
+    ["GameFontRedLarge"] = "大字体-红色",
+    ["GameFontNormalHuge"] = "超大字体-普通",
+    ["GameFontNormalHugeBlack"] = "超大字体-黑色",
+    ["BossEmoteNormalHuge"] = "首领表情-超大",
+
+    -- 数字字体
+    ["NumberFontNormal"] = "数字-普通",
+    ["NumberFontNormalYellow"] = "数字-黄色",
+    ["NumberFontNormalSmall"] = "数字-小号",
+    ["NumberFontNormalLarge"] = "数字-大号",
+    ["NumberFontNormalSmallGray"] = "数字-小号灰",
+    ["NumberFontNormalHuge"] = "数字-超大(伤害)",
+
+    -- 聊天与任务
+    ["ChatFontNormal"] = "聊天字体-普通",
+    ["ChatFontSmall"] = "聊天字体-小号",
+    ["QuestTitleFont"] = "任务标题",
+    ["QuestTitleFontBlackShadow"] = "任务标题-描边",
+    ["QuestFont"] = "任务正文",
+    ["QuestFontNormalSmall"] = "任务-小号",
+    ["QuestFontHighlightHuge"] = "任务-高亮",
+
+    -- 面板与单位框体
+    ["GroupFinderFrameGroupButton1Name"] = "地下城查找-按钮1名称",
+    ["GroupFinderFrameGroupButton2Name"] = "地下城查找-按钮2名称",
+    ["GroupFinderFrameGroupButton3Name"] = "地下城查找-按钮3名称",
+    ["PlayerName"] = "玩家姓名文字",
+    ["PlayerLevelText"] = "玩家等级文字",
+    ["TargetFrame.TargetFrameContent.TargetFrameContentMain.Name"] = "目标姓名文字",
+    ["TargetFrame.TargetFrameContent.TargetFrameContentMain.LevelText"] = "目标等级文字",
+
+    -- 延迟：PVP面板
+    ["PVPQueueFrameCategoryButton1.Name"] = "PVP分类按钮1名称",
+    ["PVPQueueFrameCategoryButton2.Name"] = "PVP分类按钮2名称",
+    ["PVPQueueFrameCategoryButton3.Name"] = "PVP分类按钮3名称",
+}
+
+local function TranslateResourceName(key)
+    if resourceNameZh[key] then
+        return resourceNameZh[key]
+    end
+
+    -- 针对带路径的对象，用箭头分隔便于阅读
+    if string.find(key, "%.") then
+        local readable = key:gsub("%.", " → ")
+        return readable
+    end
+
+    -- 基于前缀的兜底翻译
+    if key:find("^GameFont") then return "游戏字体: " .. key end
+    if key:find("^NumberFont") then return "数字字体: " .. key end
+    if key:find("^ChatFont") then return "聊天字体: " .. key end
+    if key:find("^Quest") then return "任务字体: " .. key end
+    if key:find("^GroupFinder") then return "地下城与团队: " .. key end
+    if key:find("Player") or key:find("Target") then return "单位框体: " .. key end
+
+    return key
+end
+
+local function BuildConfiguredResourceList()
+    local list = {}
+    for name, _ in pairs(fontConfigurations) do
+        table.insert(list, { key = name, zh = TranslateResourceName(name), source = "即时" })
+    end
+    for addonName, tbl in pairs(delayedFontConfigs) do
+        for name, _ in pairs(tbl) do
+            local displayKey = addonName .. ": " .. name
+            table.insert(list, { key = displayKey, zh = TranslateResourceName(name), source = "延迟" })
+        end
+    end
+    table.sort(list, function(a, b) return a.zh < b.zh end)
+    return list
+end
+
+-- =============================================================================
+--  选项面板（展示已重新设计的资源）
+-- =============================================================================
+local optionsPanel
+local optionsCategory -- Settings API 分类
+
+local function CreateOptionsPanel()
+    if optionsPanel then return end
+
+    optionsPanel = CreateFrame("Frame", "ClearFontOptionsPanel", UIParent)
+    optionsPanel.name = "ClearFont"
+
+    local title = optionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 16, -16)
+    title:SetText("ClearFont 字体资源一览")
+
+    local subtitle = optionsPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+    subtitle:SetText("以下为已由 ClearFont 重新设计的系统资源（含延迟应用项）：")
+
+    local scrollFrame = CreateFrame("ScrollFrame", "ClearFontOptionsScroll", optionsPanel, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", -4, -8)
+    scrollFrame:SetPoint("BOTTOMRIGHT", optionsPanel, "BOTTOMRIGHT", -30, 16)
+
+    local content = CreateFrame("Frame", nil, scrollFrame)
+    content:SetSize(1, 1)
+    scrollFrame:SetScrollChild(content)
+
+    local items = BuildConfiguredResourceList()
+    local lineHeight = 18
+    local totalHeight = #items * lineHeight + 8
+    content:SetSize(scrollFrame:GetWidth() - 20, totalHeight)
+
+    local header = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    header:SetPoint("TOPLEFT", 8, -4)
+    header:SetText("资源（中文） — 来源")
+
+    for index, item in ipairs(items) do
+        local line = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        line:SetPoint("TOPLEFT", 8, -4 - index * lineHeight)
+        line:SetJustifyH("LEFT")
+        line:SetText(string.format("%s  —  %s", item.zh, item.source))
+    end
+
+    -- 注册到设置/界面选项
+    if Settings and Settings.RegisterCanvasLayoutCategory then
+        local category = Settings.RegisterCanvasLayoutCategory(optionsPanel, "ClearFont")
+        Settings.RegisterAddOnCategory(category)
+        optionsCategory = category
+    elseif InterfaceOptions_AddCategory then
+        InterfaceOptions_AddCategory(optionsPanel)
+    end
+end
+
+local function OpenOptionsPanel()
+    CreateOptionsPanel()
+    if Settings and Settings.OpenToCategory and optionsCategory then
+        Settings.OpenToCategory(optionsCategory.ID or optionsCategory)
+    elseif InterfaceOptionsFrame_OpenToCategory then
+        InterfaceOptionsFrame_OpenToCategory(optionsPanel)
+        InterfaceOptionsFrame_OpenToCategory(optionsPanel) -- 两次调用以确保展开
+    end
+end
+
+-- Slash 命令
+SLASH_CLEARFONT1 = "/clearfont"
+SLASH_CLEARFONT2 = "/cf"
+SlashCmdList["CLEARFONT"] = function()
+    OpenOptionsPanel()
+end
+
+-- =============================================================================
 --  Hook系统函数
 -- =============================================================================
 local isApplying = false -- 防止递归调用
