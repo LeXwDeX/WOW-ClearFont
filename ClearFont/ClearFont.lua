@@ -77,12 +77,6 @@ local fontConfigurations = {
     ["QuestFontNormalSmall"]             = { font = CLEAR_FONT, size = 13 * CF_SCALE, style = "", shadowColor = { 0.3, 0.18, 0 } },
     ["QuestFontHighlightHuge"]           = { font = CLEAR_FONT_QUEST, size = 13 * CF_SCALE, style = "" },
 
-    -- 地下城队友查找面板
-    ["GroupFinderFrameGroupButton1Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
-    ["GroupFinderFrameGroupButton2Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
-    ["GroupFinderFrameGroupButton3Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
-    ["GroupFinderFrameGroupButton4Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
-
     -- 玩家和目标姓名以及等级数字
     ["PlayerName"] = { font = CLEAR_FONT, size =  12 * CF_SCALE, style = "OUTLINE"},
     ["PlayerLevelText"] = { font = CLEAR_FONT, size =  12 * CF_SCALE, style = "OUTLINE", offset = { x = 1, y = -2}},
@@ -91,16 +85,47 @@ local fontConfigurations = {
 }
 
 -- =============================================================================
+--  列表型字体配置（动态创建按钮/条目）
+-- =============================================================================
+local listFontConfigurations = {
+    {
+        container = "LFGListFrame.CategorySelection",
+        scanChildren = true,
+        fontKeys = { "Label" },
+        settings = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+    },
+    {
+        container = "GroupFinderFrame",
+        scanChildren = true,
+        fontKeys = { "name", "Name" },
+        settings = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+    },
+    {
+        container = "PVPQueueFrame",
+        listKey = "CategoryButtons",
+        fontKey = "Name",
+        settings = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+    },
+    {
+        container = "HonorFrame.BonusFrame",
+        scanChildren = true,
+        fontKeys = { "Title" },
+        settings = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+    },
+    {
+        container = "TrainingGroundsFrame.BonusTrainingGroundList",
+        scanChildren = true,
+        fontKeys = { "Title" },
+        settings = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+    },
+}
+
+-- =============================================================================
 --  延迟加载字体配置（需要等待特定插件加载）
 -- =============================================================================
 local delayedFontConfigs = {
     -- 竞技场队伍查找面板
     ["Blizzard_PVPUI"] = {
-        ["PVPQueueFrame.CategoryButton1.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
-        ["PVPQueueFrame.CategoryButton2.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
-        ["PVPQueueFrame.CategoryButton3.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
-        ["PVPQueueFrame.CategoryButton4.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
-        ["PVPQueueFrame.CategoryButton5.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
     },
 }
 
@@ -115,6 +140,7 @@ local hookedSetFont = {}
 local hookedSetFontObject = {}
 local fontFamilyIndex = 0
 local pendingFontConfigurations = {}
+local hookedListAddButton = false
 
 -- 添加一个工具函数来获取嵌套对象
 local function GetNestedObject(path)
@@ -243,6 +269,80 @@ local function ApplyFontConfig(configs, pending)
     end
 end
 
+local function ApplyListFontConfigEntry(entry, container)
+    if not container then
+        return false
+    end
+
+    local keys = entry.fontKeys or (entry.fontKey and { entry.fontKey }) or nil
+    if not keys then
+        return false
+    end
+
+    local function ApplyKeys(target)
+        if not target then
+            return
+        end
+        for _, key in ipairs(keys) do
+            local fontObject = target[key]
+            if fontObject then
+                fontObjectToSettings[fontObject] = entry.settings
+                EnsureHooks(fontObject)
+                ApplySettingsToFontObject(fontObject, entry.settings)
+            end
+        end
+    end
+
+    if entry.includeSelf then
+        ApplyKeys(container)
+    end
+
+    if entry.listKey then
+        local list = container[entry.listKey]
+        if not list then
+            return false
+        end
+        for _, item in pairs(list) do
+            ApplyKeys(item)
+        end
+        return true
+    end
+
+    if entry.scanChildren and type(container.GetChildren) == "function" then
+        local children = { container:GetChildren() }
+        for _, child in ipairs(children) do
+            ApplyKeys(child)
+        end
+        return true
+    end
+
+    return false
+end
+
+local function TryResolveListFontConfigs()
+    for _, entry in ipairs(listFontConfigurations) do
+        local container = GetFontObjectByName(entry.container)
+        ApplyListFontConfigEntry(entry, container)
+    end
+end
+
+local function HookListFontConfigs()
+    if hookedListAddButton then
+        return
+    end
+
+    if type(LFGListCategorySelection_AddButton) == "function" then
+        hooksecurefunc("LFGListCategorySelection_AddButton", function(self)
+            for _, entry in ipairs(listFontConfigurations) do
+                if entry.container == "LFGListFrame.CategorySelection" then
+                    ApplyListFontConfigEntry(entry, self)
+                end
+            end
+        end)
+        hookedListAddButton = true
+    end
+end
+
 local function TryResolvePendingFonts()
     if not next(pendingFontConfigurations) then
         return
@@ -335,10 +435,16 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
     if event == "PLAYER_LOGIN" then
         ClearFont:ApplyFontSettings()
         TryResolvePendingFonts()
+        TryResolveListFontConfigs()
+        HookListFontConfigs()
     elseif event == "ADDON_LOADED" and delayedFontConfigs[addon] then
         ApplyDelayedFontSettings(addon)
         TryResolvePendingFonts()
+        TryResolveListFontConfigs()
+        HookListFontConfigs()
     elseif event == "ADDON_LOADED" then
         TryResolvePendingFonts()
+        TryResolveListFontConfigs()
+        HookListFontConfigs()
     end
 end)
