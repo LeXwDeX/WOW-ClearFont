@@ -11,8 +11,9 @@ local CLEAR_FONT_DAMAGE = CLEAR_FONT_BASE .. "ARKai_C.TTF"
 local CLEAR_FONT_ITEM = CLEAR_FONT_BASE .. "ARHei.TTF"
 local CLEAR_FONT_CHAT = CLEAR_FONT_BASE .. "ARHei.TTF"
 local CF_SCALE = 0.9
-local pairs = pairs
-local unpack = unpack
+local pairs = pairs       -- 用于迭代表的全局函数
+local ipairs = ipairs     -- 用于迭代数组部分的全局函数
+local unpack = unpack     -- 用于将表拆开成多个值的全局函数
 
 -- =============================================================================
 --  字体配置
@@ -80,6 +81,7 @@ local fontConfigurations = {
     ["GroupFinderFrameGroupButton1Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
     ["GroupFinderFrameGroupButton2Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
     ["GroupFinderFrameGroupButton3Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+    ["GroupFinderFrameGroupButton4Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
 
     -- 玩家和目标姓名以及等级数字
     ["PlayerName"] = { font = CLEAR_FONT, size =  12 * CF_SCALE, style = "OUTLINE"},
@@ -94,9 +96,11 @@ local fontConfigurations = {
 local delayedFontConfigs = {
     -- 竞技场队伍查找面板
     ["Blizzard_PVPUI"] = {
-        ["PVPQueueFrameCategoryButton1.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
-        ["PVPQueueFrameCategoryButton2.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
-        ["PVPQueueFrameCategoryButton3.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+        ["PVPQueueFrame.CategoryButton1.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+        ["PVPQueueFrame.CategoryButton2.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+        ["PVPQueueFrame.CategoryButton3.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+        ["PVPQueueFrame.CategoryButton4.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
+        ["PVPQueueFrame.CategoryButton5.Name"] = { font = CLEAR_FONT, size = 14 * CF_SCALE, style = "OUTLINE" },
     },
 }
 
@@ -104,6 +108,13 @@ local delayedFontConfigs = {
 --  Hook系统函数
 -- =============================================================================
 local isApplying = false -- 防止递归调用
+local FONT_ALPHABETS = { "roman", "korean", "simplifiedchinese", "traditionalchinese", "russian" }
+local fontFamilyCache = {}
+local fontObjectToSettings = {}
+local hookedSetFont = {}
+local hookedSetFontObject = {}
+local fontFamilyIndex = 0
+local pendingFontConfigurations = {}
 
 -- 添加一个工具函数来获取嵌套对象
 local function GetNestedObject(path)
@@ -117,84 +128,143 @@ local function GetNestedObject(path)
     return obj
 end
 
-local function HookFontFunctions()
-    -- Hook SetFont方法
-    local function HookSetFont(object)
-        if not object.SetFontHooked then
-            local originalSetFont = object.SetFont
-            object.SetFont = function(self, font, size, flags)
-                if isApplying then
-                    return originalSetFont(self, font, size, flags)
-                end
-                
-                -- 查找对应的配置
-                for fontName, settings in pairs(fontConfigurations) do
-                    local fontObject
-                    if string.find(fontName, "%.") then
-                        fontObject = GetNestedObject(fontName)
-                    else
-                        fontObject = _G[fontName]
-                    end
-                    
-                    if self == fontObject then
-                        isApplying = true
-                        local result = originalSetFont(self, settings.font, settings.size, settings.style)
-                        isApplying = false
-                        return result
-                    end
-                end
-                return originalSetFont(self, font, size, flags)
-            end
-            object.SetFontHooked = true
-        end
+local function GetFontObjectByName(fontName)
+    if string.find(fontName, "%.") then
+        return GetNestedObject(fontName)
+    end
+    return _G[fontName]
+end
+
+local function GetOrCreateFontFamily(settings)
+    if not CreateFontFamily then
+        return nil
     end
 
-    -- Hook SetFontObject方法
-    local function HookSetFontObject(object)
-        if not object.SetFontObjectHooked then
-            local originalSetFontObject = object.SetFontObject
-            object.SetFontObject = function(self, fontObject)
-                if isApplying then
-                    return originalSetFontObject(self, fontObject)
-                end
-                
-                local result = originalSetFontObject(self, fontObject)
-                if type(fontObject) == "table" and fontObject.GetFont then
-                    for fontName, settings in pairs(fontConfigurations) do
-                        local targetObject
-                        if string.find(fontName, "%.") then
-                            targetObject = GetNestedObject(fontName)
-                        else
-                            targetObject = _G[fontName]
-                        end
-                        
-                        if self == targetObject then
-                            isApplying = true
-                            self:SetFont(settings.font, settings.size, settings.style)
-                            isApplying = false
-                            break
-                        end
-                    end
-                end
-                return result
-            end
-            object.SetFontObjectHooked = true
-        end
+    local style = settings.style or ""
+    local key = settings.font .. "|" .. tostring(settings.size) .. "|" .. style
+    local family = fontFamilyCache[key]
+    if family then
+        return family
     end
 
-    -- 遍历并Hook所有字体对象
-    for fontName, _ in pairs(fontConfigurations) do
-        local fontObject
-        if string.find(fontName, "%.") then
-            fontObject = GetNestedObject(fontName)
-        else
-            fontObject = _G[fontName]
+    fontFamilyIndex = fontFamilyIndex + 1
+    local name = "ClearFontFamily" .. fontFamilyIndex
+    local members = {}
+    for index, alphabet in ipairs(FONT_ALPHABETS) do
+        members[index] = {
+            alphabet = alphabet,
+            file = settings.font,
+            height = settings.size,
+            flags = style,
+        }
+    end
+
+    family = CreateFontFamily(name, members)
+    fontFamilyCache[key] = family
+    return family
+end
+
+local function ApplySettingsToFontObject(fontObject, settings)
+    if not fontObject then
+        return
+    end
+
+    local family = GetOrCreateFontFamily(settings)
+    if family and fontObject.SetFontObject then
+        fontObject:SetFontObject(family)
+    elseif fontObject.SetFont then
+        fontObject:SetFont(settings.font, settings.size, settings.style)
+    end
+
+    if settings.color and fontObject.SetTextColor then
+        fontObject:SetTextColor(unpack(settings.color))
+    end
+    if settings.shadowColor and fontObject.SetShadowColor then
+        fontObject:SetShadowColor(unpack(settings.shadowColor))
+    end
+    if settings.shadowOffset and fontObject.SetShadowOffset then
+        fontObject:SetShadowOffset(settings.shadowOffset.x or 0, settings.shadowOffset.y or 0)
+    end
+    if settings.offset and fontObject.GetNumPoints and fontObject.GetPoint and fontObject.SetPoint then
+        local numPoints = fontObject:GetNumPoints()
+        if numPoints > 0 then
+            local point, relativeTo, relativePoint, xOfs, yOfs = fontObject:GetPoint(1)
+            fontObject:SetPoint(point, relativeTo, relativePoint,
+                xOfs + (settings.offset.x or 0), yOfs + (settings.offset.y or 0))
         end
-        
+    end
+end
+
+local function EnsureHooks(fontObject)
+    if fontObject.SetFont and not hookedSetFont[fontObject] then
+        hooksecurefunc(fontObject, "SetFont", function(self)
+            if isApplying then
+                return
+            end
+            local hookSettings = fontObjectToSettings[self]
+            if hookSettings then
+                isApplying = true
+                ApplySettingsToFontObject(self, hookSettings)
+                isApplying = false
+            end
+        end)
+        hookedSetFont[fontObject] = true
+    end
+
+    if fontObject.SetFontObject and not hookedSetFontObject[fontObject] then
+        hooksecurefunc(fontObject, "SetFontObject", function(self)
+            if isApplying then
+                return
+            end
+            local hookSettings = fontObjectToSettings[self]
+            if hookSettings then
+                isApplying = true
+                ApplySettingsToFontObject(self, hookSettings)
+                isApplying = false
+            end
+        end)
+        hookedSetFontObject[fontObject] = true
+    end
+end
+
+local function ApplyFontConfig(configs, pending)
+    for fontName, settings in pairs(configs) do
+        local fontObject = GetFontObjectByName(fontName)
         if fontObject then
-            if fontObject.SetFont then HookSetFont(fontObject) end
-            if fontObject.SetFontObject then HookSetFontObject(fontObject) end
+            fontObjectToSettings[fontObject] = settings
+            EnsureHooks(fontObject)
+            ApplySettingsToFontObject(fontObject, settings)
+            if pending then
+                pending[fontName] = nil
+            end
+        elseif pending then
+            pending[fontName] = settings
         end
+    end
+end
+
+local function TryResolvePendingFonts()
+    if not next(pendingFontConfigurations) then
+        return
+    end
+
+    local unresolved = {}
+    for fontName, settings in pairs(pendingFontConfigurations) do
+        local fontObject = GetFontObjectByName(fontName)
+        if fontObject then
+            fontObjectToSettings[fontObject] = settings
+            EnsureHooks(fontObject)
+            ApplySettingsToFontObject(fontObject, settings)
+        else
+            unresolved[fontName] = settings
+        end
+    end
+
+    for fontName in pairs(pendingFontConfigurations) do
+        pendingFontConfigurations[fontName] = nil
+    end
+    for fontName, settings in pairs(unresolved) do
+        pendingFontConfigurations[fontName] = settings
     end
 end
 
@@ -202,44 +272,19 @@ end
 --  应用字体设置
 -- =============================================================================
 function ClearFont:ApplyFontSettings()
+    if isApplying then
+        return
+    end
     isApplying = true
 
     -- 应用常规字体配置
-    for fontName, settings in pairs(fontConfigurations) do
-        local fontObject
-        if string.find(fontName, "%.") then
-            -- 处理带点号的路径
-            fontObject = GetNestedObject(fontName)
-        else
-            -- 处理普通的全局对象
-            fontObject = _G[fontName]
-        end
-
-        if fontObject then
-            if fontObject.SetFont then
-                fontObject:SetFont(settings.font, settings.size, settings.style)
-                if settings.color then
-                    fontObject:SetTextColor(unpack(settings.color))
-                end
-                -- offset 处理逻辑
-                if settings.offset then
-                    -- 获取当前的所有锚点信息
-                    local numPoints = fontObject:GetNumPoints()
-                    if numPoints > 0 then
-                        -- 只调整第一个锚点的偏移量
-                        local point, relativeTo, relativePoint, xOfs, yOfs = fontObject:GetPoint(1)
-                        fontObject:SetPoint(point, relativeTo, relativePoint, 
-                            xOfs + (settings.offset.x or 0), yOfs + (settings.offset.y or 0))
-                    end
-                end
-            end
-        end
-    end
+    ApplyFontConfig(fontConfigurations, pendingFontConfigurations)
 
     -- 更新系统字体
     STANDARD_TEXT_FONT = CLEAR_FONT_CHAT
     UNIT_NAME_FONT = CLEAR_FONT
-    NAMEPLATE_FONT = CLEAR_FONT
+    NAMEPLATE_FONT = "GameFontWhite"
+    DAMAGE_TEXT_FONT = CLEAR_FONT_DAMAGE
     UIDROPDOWNMENU_DEFAULT_TEXT_HEIGHT = 12 * CF_SCALE
 
     -- 更新聊天字体高度
@@ -272,17 +317,12 @@ end
 -- =============================================================================
 local function ApplyDelayedFontSettings(addonName)
     if delayedFontConfigs[addonName] then
-        for fontPath, settings in pairs(delayedFontConfigs[addonName]) do
-            -- 分解路径获取父对象和子组件
-            local parent, child = strsplit(".", fontPath)
-            local parentObj = _G[parent]
-            -- 检查子组件是否存在
-            if parentObj and parentObj[child] then
-                if parentObj[child].SetFont then
-                    parentObj[child]:SetFont(settings.font, settings.size, settings.style)
-                end
-            end
+        if isApplying then
+            return
         end
+        isApplying = true
+        ApplyFontConfig(delayedFontConfigs[addonName], pendingFontConfigurations)
+        isApplying = false
     end
 end
 
@@ -293,9 +333,12 @@ ClearFont:RegisterEvent("PLAYER_LOGIN")
 ClearFont:RegisterEvent("ADDON_LOADED")
 ClearFont:SetScript("OnEvent", function(self, event, addon)
     if event == "PLAYER_LOGIN" then
-        HookFontFunctions()
         ClearFont:ApplyFontSettings()
+        TryResolvePendingFonts()
     elseif event == "ADDON_LOADED" and delayedFontConfigs[addon] then
         ApplyDelayedFontSettings(addon)
+        TryResolvePendingFonts()
+    elseif event == "ADDON_LOADED" then
+        TryResolvePendingFonts()
     end
 end)
