@@ -14,6 +14,13 @@ local CF_SCALE = 0.9
 local pairs = pairs       -- 用于迭代表的全局函数
 local ipairs = ipairs     -- 用于迭代数组部分的全局函数
 local unpack = unpack     -- 用于将表拆开成多个值的全局函数
+local NAMEPLATE_CASTBAR_SHADOW_COLOR = { 0, 0, 0, 1 }
+local NAMEPLATE_CASTBAR_SHADOW_OFFSET = { x = 1, y = -1 }
+local NAMEPLATE_CASTBAR_FONT_SCALE = CF_SCALE
+local TARGET_SPELLBAR_FONT_DELTA = -1
+local TARGET_SPELLBAR_SHADOW_COLOR = { 0, 0, 0, 1 }
+local TARGET_SPELLBAR_SHADOW_OFFSET = { x = 1, y = -1 }
+local RAID_MEMBER_NAME_OFFSET = { x = 0, y = -2 }
 
 -- =============================================================================
 --  字体配置
@@ -82,6 +89,23 @@ local fontConfigurations = {
     ["PlayerLevelText"] = { font = CLEAR_FONT, size =  12 * CF_SCALE, style = "OUTLINE", offset = { x = 1, y = -2}},
     ["TargetFrame.TargetFrameContent.TargetFrameContentMain.Name"] = { font = CLEAR_FONT, size =  12 * CF_SCALE, style = "OUTLINE", offset = { x = 1, y = -1}},
     ["TargetFrame.TargetFrameContent.TargetFrameContentMain.LevelText"] = { font = CLEAR_FONT, size =  12 * CF_SCALE, style = "OUTLINE", offset = { x = 1, y = -3} },
+
+    -- 新版姓名板施法条字体
+    ["SystemFont_NamePlateCastBar"] = {
+        font = CLEAR_FONT,
+        size = 10,
+        style = "OUTLINE",
+        shadowColor = NAMEPLATE_CASTBAR_SHADOW_COLOR,
+        shadowOffset = NAMEPLATE_CASTBAR_SHADOW_OFFSET,
+    },
+
+    -- 插件数字（小地图插件收纳按钮）
+    ["AddonCompartmentFrame.Text"] = { font = CLEAR_FONT, size = 11 * CF_SCALE, style = "", offset = { x = -1, y = 0 } },
+
+    -- 小地图区域名称：Y 轴下移 1
+    ["MinimapZoneText"] = { offset = { x = 0, y = -1 } },
+    -- 小地图时间：Y 轴下移 1
+    ["TimeManagerClockTicker"] = { offset = { x = 0, y = -1 } },
 }
 
 -- =============================================================================
@@ -141,6 +165,9 @@ local hookedSetFontObject = {}
 local fontFamilyIndex = 0
 local pendingFontConfigurations = {}
 local hookedListAddButton = false
+local hookedNamePlateCastBarFonts = false
+local hookedTargetSpellBarFont = false
+local hookedCompactUnitFrameNameOffset = false
 
 -- 添加一个工具函数来获取嵌套对象
 local function GetNestedObject(path)
@@ -163,6 +190,9 @@ end
 
 local function GetOrCreateFontFamily(settings)
     if not CreateFontFamily then
+        return nil
+    end
+    if not settings.font or not settings.size then
         return nil
     end
 
@@ -190,16 +220,133 @@ local function GetOrCreateFontFamily(settings)
     return family
 end
 
+local function AdjustFontSize(fontString, delta)
+    if not fontString or not fontString.GetFont or not fontString.SetFont then
+        return
+    end
+
+    local font, size, flags = fontString:GetFont()
+    if not font or not size then
+        return
+    end
+
+    local signature = font .. "|" .. tostring(size) .. "|" .. tostring(flags)
+    if fontString.__ClearFontLastSignature == signature and fontString.__ClearFontLastDelta == delta then
+        return
+    end
+
+    local newSize = size + delta
+    if newSize <= 0 then
+        return
+    end
+
+    fontString:SetFont(font, newSize, flags)
+    fontString.__ClearFontLastSignature = font .. "|" .. tostring(newSize) .. "|" .. tostring(flags)
+    fontString.__ClearFontLastDelta = delta
+end
+
+local function ApplyNamePlateCastBarFontString(fontString, baseHeight)
+    if not fontString then
+        return
+    end
+
+    if fontString.SetShadowColor then
+        fontString:SetShadowColor(unpack(NAMEPLATE_CASTBAR_SHADOW_COLOR))
+    end
+    if fontString.SetShadowOffset then
+        fontString:SetShadowOffset(NAMEPLATE_CASTBAR_SHADOW_OFFSET.x or 0, NAMEPLATE_CASTBAR_SHADOW_OFFSET.y or 0)
+    end
+
+    local height = baseHeight
+    if not height and fontString.GetFont then
+        local _, size = fontString:GetFont()
+        height = size
+    end
+    if not height or not fontString.SetTextHeight then
+        return
+    end
+
+    local targetHeight = height * NAMEPLATE_CASTBAR_FONT_SCALE
+    if targetHeight <= 0 then
+        return
+    end
+
+    if fontString.GetFont then
+        local _, currentSize = fontString:GetFont()
+        if currentSize ~= targetHeight then
+            fontString:SetTextHeight(targetHeight)
+        end
+    else
+        fontString:SetTextHeight(targetHeight)
+    end
+end
+
+local function ApplyTargetSpellBarFontString(fontString, baseSize)
+    if not fontString then
+        return
+    end
+
+    if fontString.SetShadowColor then
+        fontString:SetShadowColor(unpack(TARGET_SPELLBAR_SHADOW_COLOR))
+    end
+    if fontString.SetShadowOffset then
+        fontString:SetShadowOffset(TARGET_SPELLBAR_SHADOW_OFFSET.x or 0, TARGET_SPELLBAR_SHADOW_OFFSET.y or 0)
+    end
+
+    local font, size, flags = fontString.GetFont and fontString:GetFont() or nil
+    if not font or not size then
+        return
+    end
+
+    local base = baseSize or fontString.__ClearFontTargetSpellBaseSize
+    if not base then
+        base = size
+    end
+    fontString.__ClearFontTargetSpellBaseSize = base
+
+    local targetSize = base + TARGET_SPELLBAR_FONT_DELTA
+    if targetSize <= 0 then
+        return
+    end
+
+    if size ~= targetSize then
+        fontString:SetFont(font, targetSize, flags)
+    end
+end
+
+local function HookTargetSpellBarFontString(fontString)
+    if not fontString or fontString.__ClearFontTargetSpellHooked then
+        return
+    end
+
+    if fontString.SetFont then
+        hooksecurefunc(fontString, "SetFont", function(self, _, size)
+            ApplyTargetSpellBarFontString(self, size)
+        end)
+    end
+
+    if fontString.SetFontObject then
+        hooksecurefunc(fontString, "SetFontObject", function(self)
+            self.__ClearFontTargetSpellBaseSize = nil
+            ApplyTargetSpellBarFontString(self)
+        end)
+    end
+
+    fontString.__ClearFontTargetSpellHooked = true
+end
+
 local function ApplySettingsToFontObject(fontObject, settings)
     if not fontObject then
         return
     end
 
-    local family = GetOrCreateFontFamily(settings)
-    if family and fontObject.SetFontObject then
-        fontObject:SetFontObject(family)
-    elseif fontObject.SetFont then
-        fontObject:SetFont(settings.font, settings.size, settings.style)
+    if settings.font and settings.size then
+        local family = GetOrCreateFontFamily(settings)
+        if family and fontObject.SetFontObject then
+            fontObject:SetFontObject(family)
+        elseif fontObject.SetFont then
+            fontObject:SetFont(settings.font, settings.size, settings.style)
+        end
     end
 
     if settings.color and fontObject.SetTextColor then
@@ -219,6 +366,180 @@ local function ApplySettingsToFontObject(fontObject, settings)
                 xOfs + (settings.offset.x or 0), yOfs + (settings.offset.y or 0))
         end
     end
+end
+
+local function ApplyNamePlateCastBarFonts(castBar, baseHeight)
+    if not castBar then
+        return
+    end
+
+    local resolvedHeight = baseHeight
+    if not resolvedHeight and NamePlateSetupOptions then
+        resolvedHeight = NamePlateSetupOptions.castBarFontHeight
+    end
+
+    ApplyNamePlateCastBarFontString(castBar.Text, resolvedHeight)
+    ApplyNamePlateCastBarFontString(castBar.CastTargetNameText, resolvedHeight)
+end
+
+local function ApplyNamePlateCastBarFontsToExisting()
+    if not NamePlateDriverFrame or not NamePlateDriverFrame.ForEachNamePlate then
+        return
+    end
+
+    NamePlateDriverFrame:ForEachNamePlate(function(frame)
+        if frame and frame.UnitFrame then
+            ApplyNamePlateCastBarFonts(frame.UnitFrame.castBar)
+        end
+    end)
+end
+
+local function HookNamePlateCastBarFonts()
+    if hookedNamePlateCastBarFonts then
+        return
+    end
+    if not NamePlateCastingBarMixin or not NamePlateUnitFrameMixin then
+        return
+    end
+
+    hooksecurefunc(NamePlateCastingBarMixin, "OnLoad", function(self)
+        ApplyNamePlateCastBarFonts(self)
+    end)
+
+    hooksecurefunc(NamePlateUnitFrameMixin, "ApplyFrameOptions", function(self, setupOptions)
+        local height = setupOptions and setupOptions.castBarFontHeight or nil
+        ApplyNamePlateCastBarFonts(self.castBar, height)
+    end)
+
+    ApplyNamePlateCastBarFontsToExisting()
+    hookedNamePlateCastBarFonts = true
+end
+
+local function HookTargetSpellBarFont()
+    if hookedTargetSpellBarFont then
+        return
+    end
+    if not TargetFrameMixin then
+        return
+    end
+
+    local function ApplyTargetSpellBarFonts(spellbar)
+        if not spellbar then
+            return
+        end
+        ApplyTargetSpellBarFontString(spellbar.Text)
+        ApplyTargetSpellBarFontString(spellbar.CastTargetNameText)
+        HookTargetSpellBarFontString(spellbar.Text)
+        HookTargetSpellBarFontString(spellbar.CastTargetNameText)
+    end
+
+    local function ApplyTargetSpellBarFontsToFrame(frame)
+        if frame and frame.spellbar then
+            ApplyTargetSpellBarFonts(frame.spellbar)
+        end
+    end
+
+    local function ApplyTargetSpellBarFontsToExisting()
+        ApplyTargetSpellBarFontsToFrame(TargetFrame)
+        ApplyTargetSpellBarFontsToFrame(FocusFrame)
+        if BossTargetFrameContainer and BossTargetFrameContainer.BossTargetFrames then
+            for _, bossFrame in ipairs(BossTargetFrameContainer.BossTargetFrames) do
+                ApplyTargetSpellBarFontsToFrame(bossFrame)
+            end
+        end
+    end
+
+    hooksecurefunc(TargetFrameMixin, "CreateSpellbar", function(self)
+        ApplyTargetSpellBarFonts(self and self.spellbar)
+    end)
+
+    ApplyTargetSpellBarFontsToExisting()
+
+    hookedTargetSpellBarFont = true
+end
+
+local function ApplyCompactUnitFrameNameOffset(frame)
+    if not frame or not frame.name then
+        return
+    end
+
+    -- 仅处理团队/小队紧凑框体，避免姓名板等受保护区域触发 taint
+    if not frame.groupType or frame.ignoreCUFNameRequirement then
+        return
+    end
+
+    local nameText = frame.name
+    if nameText.IsForbidden and nameText:IsForbidden() then
+        return
+    end
+
+    local numPoints = nameText:GetNumPoints()
+    if numPoints == 0 then
+        return
+    end
+
+    local points = {}
+    for i = 1, numPoints do
+        points[i] = { nameText:GetPoint(i) }
+    end
+
+    local function BuildSignature(pointList, offsetX, offsetY)
+        local parts = {}
+        for i = 1, #pointList do
+            local point, relativeTo, relativePoint, xOfs, yOfs = unpack(pointList[i])
+            parts[#parts + 1] = table.concat({
+                tostring(point),
+                tostring(relativeTo),
+                tostring(relativePoint),
+                tostring((xOfs or 0) + offsetX),
+                tostring((yOfs or 0) + offsetY),
+            }, "|")
+        end
+        return table.concat(parts, ";")
+    end
+
+    local currentSignature = BuildSignature(points, 0, 0)
+    if nameText.__ClearFontRaidNamePointSignature == currentSignature then
+        return
+    end
+
+    nameText:ClearAllPoints()
+    for i = 1, #points do
+        local point, relativeTo, relativePoint, xOfs, yOfs = unpack(points[i])
+        nameText:SetPoint(point, relativeTo, relativePoint,
+            (xOfs or 0) + RAID_MEMBER_NAME_OFFSET.x, (yOfs or 0) + RAID_MEMBER_NAME_OFFSET.y)
+    end
+
+    nameText.__ClearFontRaidNamePointSignature = BuildSignature(points, RAID_MEMBER_NAME_OFFSET.x, RAID_MEMBER_NAME_OFFSET.y)
+end
+
+local function HookCompactUnitFrameNameOffset()
+    if hookedCompactUnitFrameNameOffset then
+        return
+    end
+    if not CompactUnitFrame_UpdateAll then
+        return
+    end
+
+    hooksecurefunc("CompactUnitFrame_UpdateAll", function(frame)
+        ApplyCompactUnitFrameNameOffset(frame)
+    end)
+
+    if DefaultCompactUnitFrameSetup then
+        hooksecurefunc("DefaultCompactUnitFrameSetup", ApplyCompactUnitFrameNameOffset)
+    end
+    if DefaultCompactMiniFrameSetup then
+        hooksecurefunc("DefaultCompactMiniFrameSetup", ApplyCompactUnitFrameNameOffset)
+    end
+
+    if CompactRaidFrameContainer and CompactRaidGroup_ApplyFunctionToAllFrames then
+        CompactRaidGroup_ApplyFunctionToAllFrames(CompactRaidFrameContainer, "all", ApplyCompactUnitFrameNameOffset)
+    end
+    if CompactPartyFrame and CompactRaidGroup_ApplyFunctionToAllFrames then
+        CompactRaidGroup_ApplyFunctionToAllFrames(CompactPartyFrame, "all", ApplyCompactUnitFrameNameOffset)
+    end
+
+    hookedCompactUnitFrameNameOffset = true
 end
 
 local function EnsureHooks(fontObject)
@@ -437,14 +758,27 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
         TryResolvePendingFonts()
         TryResolveListFontConfigs()
         HookListFontConfigs()
+        HookNamePlateCastBarFonts()
+        HookTargetSpellBarFont()
+        HookCompactUnitFrameNameOffset()
     elseif event == "ADDON_LOADED" and delayedFontConfigs[addon] then
         ApplyDelayedFontSettings(addon)
         TryResolvePendingFonts()
         TryResolveListFontConfigs()
         HookListFontConfigs()
+        HookNamePlateCastBarFonts()
+        HookTargetSpellBarFont()
+        HookCompactUnitFrameNameOffset()
     elseif event == "ADDON_LOADED" then
         TryResolvePendingFonts()
         TryResolveListFontConfigs()
         HookListFontConfigs()
+        if addon == "Blizzard_NamePlates" then
+            HookNamePlateCastBarFonts()
+        end
+        if addon == "Blizzard_UnitFrame" then
+            HookTargetSpellBarFont()
+            HookCompactUnitFrameNameOffset()
+        end
     end
 end)
