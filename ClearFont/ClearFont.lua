@@ -20,7 +20,6 @@ local NAMEPLATE_CASTBAR_FONT_SCALE = CF_SCALE
 local TARGET_SPELLBAR_FONT_DELTA = -1
 local TARGET_SPELLBAR_SHADOW_COLOR = { 0, 0, 0, 1 }
 local TARGET_SPELLBAR_SHADOW_OFFSET = { x = 1, y = -1 }
-local RAID_MEMBER_NAME_OFFSET = { x = 0, y = -2 }
 
 -- =============================================================================
 --  字体配置
@@ -167,7 +166,6 @@ local pendingFontConfigurations = {}
 local hookedListAddButton = false
 local hookedNamePlateCastBarFonts = false
 local hookedTargetSpellBarFont = false
-local hookedCompactUnitFrameNameOffset = false
 
 -- 添加一个工具函数来获取嵌套对象
 local function GetNestedObject(path)
@@ -458,89 +456,6 @@ local function HookTargetSpellBarFont()
     hookedTargetSpellBarFont = true
 end
 
-local function ApplyCompactUnitFrameNameOffset(frame)
-    if not frame or not frame.name then
-        return
-    end
-
-    -- 仅处理团队/小队紧凑框体，避免姓名板等受保护区域触发 taint
-    if not frame.groupType or frame.ignoreCUFNameRequirement then
-        return
-    end
-
-    local nameText = frame.name
-    if nameText.IsForbidden and nameText:IsForbidden() then
-        return
-    end
-
-    local numPoints = nameText:GetNumPoints()
-    if numPoints == 0 then
-        return
-    end
-
-    local points = {}
-    for i = 1, numPoints do
-        points[i] = { nameText:GetPoint(i) }
-    end
-
-    local function BuildSignature(pointList, offsetX, offsetY)
-        local parts = {}
-        for i = 1, #pointList do
-            local point, relativeTo, relativePoint, xOfs, yOfs = unpack(pointList[i])
-            parts[#parts + 1] = table.concat({
-                tostring(point),
-                tostring(relativeTo),
-                tostring(relativePoint),
-                tostring((xOfs or 0) + offsetX),
-                tostring((yOfs or 0) + offsetY),
-            }, "|")
-        end
-        return table.concat(parts, ";")
-    end
-
-    local currentSignature = BuildSignature(points, 0, 0)
-    if nameText.__ClearFontRaidNamePointSignature == currentSignature then
-        return
-    end
-
-    nameText:ClearAllPoints()
-    for i = 1, #points do
-        local point, relativeTo, relativePoint, xOfs, yOfs = unpack(points[i])
-        nameText:SetPoint(point, relativeTo, relativePoint,
-            (xOfs or 0) + RAID_MEMBER_NAME_OFFSET.x, (yOfs or 0) + RAID_MEMBER_NAME_OFFSET.y)
-    end
-
-    nameText.__ClearFontRaidNamePointSignature = BuildSignature(points, RAID_MEMBER_NAME_OFFSET.x, RAID_MEMBER_NAME_OFFSET.y)
-end
-
-local function HookCompactUnitFrameNameOffset()
-    if hookedCompactUnitFrameNameOffset then
-        return
-    end
-    if not CompactUnitFrame_UpdateAll then
-        return
-    end
-
-    hooksecurefunc("CompactUnitFrame_UpdateAll", function(frame)
-        ApplyCompactUnitFrameNameOffset(frame)
-    end)
-
-    if DefaultCompactUnitFrameSetup then
-        hooksecurefunc("DefaultCompactUnitFrameSetup", ApplyCompactUnitFrameNameOffset)
-    end
-    if DefaultCompactMiniFrameSetup then
-        hooksecurefunc("DefaultCompactMiniFrameSetup", ApplyCompactUnitFrameNameOffset)
-    end
-
-    if CompactRaidFrameContainer and CompactRaidGroup_ApplyFunctionToAllFrames then
-        CompactRaidGroup_ApplyFunctionToAllFrames(CompactRaidFrameContainer, "all", ApplyCompactUnitFrameNameOffset)
-    end
-    if CompactPartyFrame and CompactRaidGroup_ApplyFunctionToAllFrames then
-        CompactRaidGroup_ApplyFunctionToAllFrames(CompactPartyFrame, "all", ApplyCompactUnitFrameNameOffset)
-    end
-
-    hookedCompactUnitFrameNameOffset = true
-end
 
 local function EnsureHooks(fontObject)
     if fontObject.SetFont and not hookedSetFont[fontObject] then
@@ -760,7 +675,6 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
         HookListFontConfigs()
         HookNamePlateCastBarFonts()
         HookTargetSpellBarFont()
-        HookCompactUnitFrameNameOffset()
     elseif event == "ADDON_LOADED" and delayedFontConfigs[addon] then
         ApplyDelayedFontSettings(addon)
         TryResolvePendingFonts()
@@ -768,7 +682,6 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
         HookListFontConfigs()
         HookNamePlateCastBarFonts()
         HookTargetSpellBarFont()
-        HookCompactUnitFrameNameOffset()
     elseif event == "ADDON_LOADED" then
         TryResolvePendingFonts()
         TryResolveListFontConfigs()
@@ -778,7 +691,6 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
         end
         if addon == "Blizzard_UnitFrame" then
             HookTargetSpellBarFont()
-            HookCompactUnitFrameNameOffset()
         end
     end
 end)
