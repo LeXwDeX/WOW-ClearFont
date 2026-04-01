@@ -166,6 +166,7 @@ local pendingFontConfigurations = {}
 local hookedListAddButton = false
 local hookedNamePlateCastBarFonts = false
 local hookedTargetSpellBarFont = false
+local hookedPartyMemberNameFont = false
 
 -- 添加一个工具函数来获取嵌套对象
 local function GetNestedObject(path)
@@ -489,6 +490,42 @@ local function EnsureHooks(fontObject)
     end
 end
 
+-- =============================================================================
+--  小队成员名称字体配置
+-- =============================================================================
+local PARTY_MEMBER_NAME_FONT_SETTINGS = { font = CLEAR_FONT, size = 12 * CF_SCALE, style = "OUTLINE" }
+
+local function ApplyPartyMemberNameFont(memberFrame)
+    if not memberFrame or not memberFrame.Name then
+        return
+    end
+    fontObjectToSettings[memberFrame.Name] = PARTY_MEMBER_NAME_FONT_SETTINGS
+    EnsureHooks(memberFrame.Name)
+    ApplySettingsToFontObject(memberFrame.Name, PARTY_MEMBER_NAME_FONT_SETTINGS)
+end
+
+local function HookPartyMemberNameFont()
+    if hookedPartyMemberNameFont then
+        return
+    end
+    if not PartyMemberFrameMixin then
+        return
+    end
+
+    hooksecurefunc(PartyMemberFrameMixin, "Setup", function(self)
+        ApplyPartyMemberNameFont(self)
+    end)
+
+    -- 应用到已存在的活跃小队成员框架
+    if PartyFrame and PartyFrame.PartyMemberFramePool then
+        for memberFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
+            ApplyPartyMemberNameFont(memberFrame)
+        end
+    end
+
+    hookedPartyMemberNameFont = true
+end
+
 local function ApplyFontConfig(configs, pending)
     for fontName, settings in pairs(configs) do
         local fontObject = GetFontObjectByName(fontName)
@@ -675,6 +712,7 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
         HookListFontConfigs()
         HookNamePlateCastBarFonts()
         HookTargetSpellBarFont()
+        HookPartyMemberNameFont()
     elseif event == "ADDON_LOADED" and delayedFontConfigs[addon] then
         ApplyDelayedFontSettings(addon)
         TryResolvePendingFonts()
@@ -682,6 +720,7 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
         HookListFontConfigs()
         HookNamePlateCastBarFonts()
         HookTargetSpellBarFont()
+        HookPartyMemberNameFont()
     elseif event == "ADDON_LOADED" then
         TryResolvePendingFonts()
         TryResolveListFontConfigs()
@@ -691,6 +730,7 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
         end
         if addon == "Blizzard_UnitFrame" then
             HookTargetSpellBarFont()
+            HookPartyMemberNameFont()
         end
     end
 end)

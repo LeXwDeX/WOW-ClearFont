@@ -1,4 +1,5 @@
-.vscode
+.vscode/
+.codex_plan/
 copy_clearfont.cmd
 WOW_UISource
 AGENTS.md
