@@ -503,7 +503,7 @@ end
 --  小队成员名称字体配置
 -- =============================================================================
 local PARTY_MEMBER_NAME_FONT_SETTINGS = { font = CLEAR_FONT, size = 11 * CF_SCALE, style = "OUTLINE" }
-local PARTY_MEMBER_HEALTH_TEXT_FONT_SETTINGS = { font = CLEAR_FONT_NUMBER, size = 9 * CF_SCALE, style = "OUTLINE" }
+local PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS = { font = CLEAR_FONT_NUMBER, size = 10 * CF_SCALE, style = "OUTLINE" }
 
 local function ApplyPartyMemberNameFont(memberFrame)
     if not memberFrame or not memberFrame.Name then
@@ -513,15 +513,27 @@ local function ApplyPartyMemberNameFont(memberFrame)
     EnsureHooks(memberFrame.Name)
     ApplySettingsToFontObject(memberFrame.Name, PARTY_MEMBER_NAME_FONT_SETTINGS)
 
-    -- 生命值百分比和具体数值文本
+    -- 血条和资源条文本
     local hbc = memberFrame.HealthBarContainer
     if hbc then
         local healthTexts = { hbc.CenterText, hbc.LeftText, hbc.RightText }
         for _, textObj in ipairs(healthTexts) do
             if textObj then
-                fontObjectToSettings[textObj] = PARTY_MEMBER_HEALTH_TEXT_FONT_SETTINGS
+                fontObjectToSettings[textObj] = PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS
                 EnsureHooks(textObj)
-                ApplySettingsToFontObject(textObj, PARTY_MEMBER_HEALTH_TEXT_FONT_SETTINGS)
+                ApplySettingsToFontObject(textObj, PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS)
+            end
+        end
+    end
+
+    local manaBar = memberFrame.ManaBar
+    if manaBar then
+        local manaTexts = { manaBar.CenterText, manaBar.LeftText, manaBar.RightText }
+        for _, textObj in ipairs(manaTexts) do
+            if textObj then
+                fontObjectToSettings[textObj] = PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS
+                EnsureHooks(textObj)
+                ApplySettingsToFontObject(textObj, PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS)
             end
         end
     end
