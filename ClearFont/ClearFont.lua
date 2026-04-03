@@ -503,7 +503,9 @@ end
 -- =============================================================================
 --  小队成员名称字体配置
 -- =============================================================================
-local PARTY_MEMBER_NAME_FONT_SETTINGS = { font = CLEAR_FONT, size = 11 * CF_SCALE, style = "OUTLINE" }
+local PARTY_MEMBER_NAME_FONT_SETTINGS          = { font = CLEAR_FONT,        size = 11 * CF_SCALE, style = "OUTLINE" }
+-- CompactUnitFrame.statusText 继承 GameFontDisable，不在 SecureFrame 层级，可修改
+local COMPACT_PARTY_STATUS_TEXT_FONT_SETTINGS  = { font = CLEAR_FONT_NUMBER, size = 9,             style = "OUTLINE" }
 
 local function ApplyPartyMemberNameFont(memberFrame)
     if not memberFrame or not memberFrame.Name then
@@ -529,10 +531,11 @@ local function ApplyCompactPartyMemberFont(unitFrame)
         ApplySettingsToFontObject(unitFrame.name, PARTY_MEMBER_NAME_FONT_SETTINGS)
     end
 
+    -- statusText 继承 GameFontDisable，不在 SecureFrame 层级，可以修改字体大小
     if unitFrame.statusText then
-        fontObjectToSettings[unitFrame.statusText] = PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS
+        fontObjectToSettings[unitFrame.statusText] = COMPACT_PARTY_STATUS_TEXT_FONT_SETTINGS
         EnsureHooks(unitFrame.statusText)
-        ApplySettingsToFontObject(unitFrame.statusText, PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS)
+        ApplySettingsToFontObject(unitFrame.statusText, COMPACT_PARTY_STATUS_TEXT_FONT_SETTINGS)
     end
 end
 
