@@ -72,9 +72,6 @@ local fontConfigurations = {
     ["NumberFontNormalSmallGray"]        = { font = CLEAR_FONT_NUMBER, size = 11 * CF_SCALE, style = "OUTLINE" },
     ["NumberFontNormalHuge"]             = { font = CLEAR_FONT_DAMAGE, size = 15 * CF_SCALE, style = "OUTLINE" },
 
-    -- 状态条文字模板（血条/蓝条上的数值/百分比文字，修改模板让引擎自动传播）
-    ["TextStatusBarText"]                = { font = CLEAR_FONT_NUMBER, size = 10 * CF_SCALE, style = "OUTLINE" },
-
     -- 聊天字体
     ["ChatFontNormal"]                   = { font = CLEAR_FONT_CHAT, size = 14 * CF_SCALE, style = "OUTLINE" },
     ["ChatFontSmall"]                    = { font = CLEAR_FONT_CHAT, size = 13 * CF_SCALE, style = "OUTLINE" },
@@ -506,7 +503,33 @@ end
 -- =============================================================================
 --  小队成员名称字体配置
 -- =============================================================================
-local PARTY_MEMBER_NAME_FONT_SETTINGS = { font = CLEAR_FONT, size = 11 * CF_SCALE, style = "OUTLINE" }
+local PARTY_MEMBER_NAME_FONT_SETTINGS     = { font = CLEAR_FONT,        size = 11 * CF_SCALE, style = "OUTLINE" }
+local PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS = { font = CLEAR_FONT_NUMBER, size = 10 * CF_SCALE, style = "OUTLINE" }
+
+-- 状态条文字专用：用 isApplying 保护 SetFont，防止被全局 SetFont hook 触发
+-- ApplySettingsToFontObject 走 SetFontObject(family) 分支再次覆盖大小
+local function ApplyBarTextFont(textObj, settings)
+    if not textObj then return end
+    if textObj.SetFont then
+        isApplying = true
+        textObj:SetFont(settings.font, settings.size, settings.style or "")
+        isApplying = false
+    end
+    -- 记录设置，并 hook SetFontObject 防止后续被字体模板重置
+    fontObjectToSettings[textObj] = settings
+    if textObj.SetFontObject and not hookedSetFontObject[textObj] then
+        hooksecurefunc(textObj, "SetFontObject", function(self)
+            if isApplying then return end
+            local s = fontObjectToSettings[self]
+            if s and self.SetFont then
+                isApplying = true
+                self:SetFont(s.font, s.size, s.style or "")
+                isApplying = false
+            end
+        end)
+        hookedSetFontObject[textObj] = true
+    end
+end
 
 local function ApplyPartyMemberNameFont(memberFrame)
     if not memberFrame or not memberFrame.Name then
@@ -515,6 +538,22 @@ local function ApplyPartyMemberNameFont(memberFrame)
     fontObjectToSettings[memberFrame.Name] = PARTY_MEMBER_NAME_FONT_SETTINGS
     EnsureHooks(memberFrame.Name)
     ApplySettingsToFontObject(memberFrame.Name, PARTY_MEMBER_NAME_FONT_SETTINGS)
+
+    -- 血条文本（CenterText 数值 / LeftText 百分比 / RightText 数值）
+    local hbc = memberFrame.HealthBarContainer
+    if hbc then
+        ApplyBarTextFont(hbc.CenterText, PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS)
+        ApplyBarTextFont(hbc.LeftText,   PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS)
+        ApplyBarTextFont(hbc.RightText,  PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS)
+    end
+
+    -- 蓝条文本
+    local manaBar = memberFrame.ManaBar
+    if manaBar then
+        ApplyBarTextFont(manaBar.CenterText, PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS)
+        ApplyBarTextFont(manaBar.LeftText,   PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS)
+        ApplyBarTextFont(manaBar.RightText,  PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS)
+    end
 end
 
 local function ApplyCompactPartyMemberFont(unitFrame)
