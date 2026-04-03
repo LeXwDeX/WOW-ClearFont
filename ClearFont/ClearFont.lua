@@ -248,6 +248,9 @@ local function ApplyNamePlateCastBarFontString(fontString, baseHeight)
     if not fontString then
         return
     end
+    if fontString.IsForbidden and fontString:IsForbidden() then
+        return
+    end
 
     if fontString.SetShadowColor then
         fontString:SetShadowColor(unpack(NAMEPLATE_CASTBAR_SHADOW_COLOR))
@@ -282,6 +285,9 @@ end
 
 local function ApplyTargetSpellBarFontString(fontString, baseSize)
     if not fontString then
+        return
+    end
+    if fontString.IsForbidden and fontString:IsForbidden() then
         return
     end
 
@@ -369,6 +375,9 @@ end
 
 local function ApplyNamePlateCastBarFonts(castBar, baseHeight)
     if not castBar then
+        return
+    end
+    if castBar.IsForbidden and castBar:IsForbidden() then
         return
     end
 
