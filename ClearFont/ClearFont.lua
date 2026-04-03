@@ -167,6 +167,7 @@ local hookedListAddButton = false
 local hookedNamePlateCastBarFonts = false
 local hookedTargetSpellBarFont = false
 local hookedPartyMemberNameFont = false
+local hookedCompactPartyMemberFont = false
 
 -- 添加一个工具函数来获取嵌套对象
 local function GetNestedObject(path)
@@ -539,6 +540,24 @@ local function ApplyPartyMemberNameFont(memberFrame)
     end
 end
 
+local function ApplyCompactPartyMemberFont(unitFrame)
+    if not unitFrame then
+        return
+    end
+
+    if unitFrame.name then
+        fontObjectToSettings[unitFrame.name] = PARTY_MEMBER_NAME_FONT_SETTINGS
+        EnsureHooks(unitFrame.name)
+        ApplySettingsToFontObject(unitFrame.name, PARTY_MEMBER_NAME_FONT_SETTINGS)
+    end
+
+    if unitFrame.statusText then
+        fontObjectToSettings[unitFrame.statusText] = PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS
+        EnsureHooks(unitFrame.statusText)
+        ApplySettingsToFontObject(unitFrame.statusText, PARTY_MEMBER_BAR_TEXT_FONT_SETTINGS)
+    end
+end
+
 local function HookPartyMemberNameFont()
     if hookedPartyMemberNameFont then
         return
@@ -559,6 +578,31 @@ local function HookPartyMemberNameFont()
     end
 
     hookedPartyMemberNameFont = true
+end
+
+local function HookCompactPartyMemberFont()
+    if hookedCompactPartyMemberFont then
+        return
+    end
+    if not CompactPartyFrameMixin then
+        return
+    end
+
+    hooksecurefunc(CompactPartyFrameMixin, "RefreshMembers", function(self)
+        if self and self.memberUnitFrames then
+            for _, unitFrame in ipairs(self.memberUnitFrames) do
+                ApplyCompactPartyMemberFont(unitFrame)
+            end
+        end
+    end)
+
+    if CompactPartyFrame and CompactPartyFrame.memberUnitFrames then
+        for _, unitFrame in ipairs(CompactPartyFrame.memberUnitFrames) do
+            ApplyCompactPartyMemberFont(unitFrame)
+        end
+    end
+
+    hookedCompactPartyMemberFont = true
 end
 
 local function ApplyFontConfig(configs, pending)
@@ -748,6 +792,7 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
         HookNamePlateCastBarFonts()
         HookTargetSpellBarFont()
         HookPartyMemberNameFont()
+        HookCompactPartyMemberFont()
     elseif event == "ADDON_LOADED" and delayedFontConfigs[addon] then
         ApplyDelayedFontSettings(addon)
         TryResolvePendingFonts()
@@ -756,6 +801,7 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
         HookNamePlateCastBarFonts()
         HookTargetSpellBarFont()
         HookPartyMemberNameFont()
+        HookCompactPartyMemberFont()
     elseif event == "ADDON_LOADED" then
         TryResolvePendingFonts()
         TryResolveListFontConfigs()
@@ -766,6 +812,7 @@ ClearFont:SetScript("OnEvent", function(self, event, addon)
         if addon == "Blizzard_UnitFrame" then
             HookTargetSpellBarFont()
             HookPartyMemberNameFont()
+            HookCompactPartyMemberFont()
         end
     end
 end)
